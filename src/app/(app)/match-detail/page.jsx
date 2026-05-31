@@ -7,6 +7,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { apiRequest } from "@/lib/api";
 import { useUser } from "@/lib/user-context";
+import { Icon } from "@/components/ui/icon";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -20,7 +21,7 @@ function PageSpinner() {
       <div className="relative flex h-14 w-14 items-center justify-center">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-10" />
         <span className="absolute h-14 w-14 animate-spin rounded-full border-4 border-transparent border-t-primary border-r-primary/40" />
-        <span className="material-symbols-outlined text-xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_cricket</span>
+        <Icon name="sports_cricket" className="text-xl text-primary" />
       </div>
       <p className="text-sm text-foreground-muted">Loading match…</p>
     </div>
@@ -44,7 +45,7 @@ function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.upcoming;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${cfg.color}`}>
-      <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>{cfg.icon}</span>
+      <Icon name={cfg.icon} className="text-sm" />
       {cfg.label}
     </span>
   );
@@ -86,13 +87,13 @@ function MotmModal({ match, token, onClose, onSaved }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4 pb-4 sm:pb-0">
       <div className="w-full max-w-sm rounded-2xl border border-outline-variant bg-surface shadow-2xl overflow-hidden">
         <div className="cricket-gradient px-5 py-4 flex items-center gap-3">
-          <span className="material-symbols-outlined text-3xl text-white" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+          <Icon name="emoji_events" className="text-3xl text-white" />
           <div>
             <h3 className="font-display text-lg font-bold text-white">Man of the Match</h3>
             <p className="text-xs text-white/70">Select the standout performer</p>
           </div>
           <button onClick={onClose} className="ml-auto rounded-xl p-1.5 text-white/70 hover:bg-white/10">
-            <span className="material-symbols-outlined text-xl">close</span>
+            <Icon name="close" className="" />
           </button>
         </div>
         <div className="max-h-72 overflow-y-auto divide-y divide-outline-variant/30">
@@ -108,7 +109,7 @@ function MotmModal({ match, token, onClose, onSaved }) {
                 selected === p.id ? "bg-primary text-white" : "bg-surface-container text-foreground-muted"
               }`}>
                 {selected === p.id
-                  ? <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                  ? <Icon name="star" className="text-base" />
                   : p.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -165,14 +166,14 @@ function RescheduleModal({ match, token, onClose, onSaved }) {
         <div className="mb-5 flex items-center justify-between">
           <h3 className="font-display text-lg font-bold text-foreground">Reschedule Match</h3>
           <button onClick={onClose} className="rounded-xl p-1.5 text-foreground-muted hover:bg-surface-container">
-            <span className="material-symbols-outlined text-xl">close</span>
+            <Icon name="close" className="" />
           </button>
         </div>
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-foreground">New Date</label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">calendar_today</span>
+              <Icon name="calendar_today" className="" />
               <input
                 type="date"
                 value={date}
@@ -186,7 +187,7 @@ function RescheduleModal({ match, token, onClose, onSaved }) {
               Venue <span className="font-normal text-foreground-muted">(optional)</span>
             </label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">location_on</span>
+              <Icon name="location_on" className="" />
               <input
                 type="text"
                 value={venue}
@@ -224,9 +225,7 @@ function ConfirmModal({ title, message, confirmLabel, danger, onConfirm, onClose
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0">
       <div className="w-full max-w-sm rounded-2xl border border-outline-variant bg-white p-6 shadow-2xl">
         <div className={`mb-1 flex items-center gap-2 font-display text-lg font-bold ${danger ? "text-error" : "text-foreground"}`}>
-          <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {danger ? "warning" : "info"}
-          </span>
+          <Icon name={danger ? "warning" : "info"} className="text-xl" />
           {title}
         </div>
         <p className="mb-5 text-sm text-foreground-muted">{message}</p>
@@ -336,7 +335,7 @@ export default function MatchDetailPage() {
       subtitle={match.title}
       action={
         <Link href="/my-matches" className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-2 text-sm font-semibold text-foreground-muted hover:bg-surface-container transition-colors">
-          <span className="material-symbols-outlined text-lg">arrow_back</span>
+          <Icon name="arrow_back" className="" />
           My Matches
         </Link>
       }
@@ -372,14 +371,14 @@ export default function MatchDetailPage() {
           <div className="divide-y divide-outline-variant">
             <div className="flex items-center justify-between px-5 py-3">
               <span className="flex items-center gap-2 text-sm text-foreground-muted">
-                <span className="material-symbols-outlined text-lg text-outline">info</span>
+                <Icon name="info" className="" />
                 Status
               </span>
               <StatusBadge status={match.status} />
             </div>
             <div className="flex items-center justify-between px-5 py-3">
               <span className="flex items-center gap-2 text-sm text-foreground-muted">
-                <span className="material-symbols-outlined text-lg text-outline">calendar_today</span>
+                <Icon name="calendar_today" className="" />
                 Date
               </span>
               <span className="text-sm font-semibold text-foreground">{formatDate(match.date)}</span>
@@ -387,7 +386,7 @@ export default function MatchDetailPage() {
             {match.venue && (
               <div className="flex items-center justify-between px-5 py-3">
                 <span className="flex items-center gap-2 text-sm text-foreground-muted">
-                  <span className="material-symbols-outlined text-lg text-outline">location_on</span>
+                  <Icon name="location_on" className="" />
                   Venue
                 </span>
                 <span className="text-sm font-semibold text-foreground">{match.venue}</span>
@@ -396,7 +395,7 @@ export default function MatchDetailPage() {
             {match.toss_winner_team_id && (
               <div className="flex items-center justify-between px-5 py-3">
                 <span className="flex items-center gap-2 text-sm text-foreground-muted">
-                  <span className="material-symbols-outlined text-lg text-outline">sports_cricket</span>
+                  <Icon name="sports_cricket" className="" />
                   Toss
                 </span>
                 <span className="text-sm font-semibold text-foreground">
@@ -406,7 +405,7 @@ export default function MatchDetailPage() {
             )}
             <div className="flex items-center justify-between px-5 py-3">
               <span className="flex items-center gap-2 text-sm text-foreground-muted">
-                <span className="material-symbols-outlined text-lg text-outline">person</span>
+                <Icon name="person" className="" />
                 Created by
               </span>
               <span className="text-sm font-semibold text-foreground">{match.creator?.name ?? "—"}</span>
@@ -455,7 +454,7 @@ export default function MatchDetailPage() {
                   href={`/match-setup?code=${match.code}`}
                   className="cricket-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
                 >
-                  <span className="material-symbols-outlined text-lg">rocket_launch</span>
+                  <Icon name="rocket_launch" className="" />
                   Setup & Start Match
                 </Link>
               )}
@@ -466,7 +465,7 @@ export default function MatchDetailPage() {
                   href={`/live-scoring?code=${match.code}`}
                   className="cricket-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
                 >
-                  <span className="material-symbols-outlined text-lg">sports_cricket</span>
+                  <Icon name="sports_cricket" className="" />
                   Continue Scoring
                 </Link>
               )}
@@ -477,7 +476,7 @@ export default function MatchDetailPage() {
                   href={`/matches/${match.code}`}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant py-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-container"
                 >
-                  <span className="material-symbols-outlined text-lg">bar_chart</span>
+                  <Icon name="bar_chart" className="" />
                   View Full Scorecard
                 </Link>
               )}
@@ -489,7 +488,7 @@ export default function MatchDetailPage() {
                   onClick={() => setModal("motm")}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 py-3 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100"
                 >
-                  <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                  <Icon name="emoji_events" className="text-lg" />
                   {match.motm_player_id ? "Change Man of the Match" : "Set Man of the Match"}
                 </button>
               )}
@@ -501,7 +500,7 @@ export default function MatchDetailPage() {
                   onClick={() => setModal("reschedule")}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant py-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-container"
                 >
-                  <span className="material-symbols-outlined text-lg">edit_calendar</span>
+                  <Icon name="edit_calendar" className="" />
                   {match.status === "abandoned" ? "Reschedule (Reopen)" : "Reschedule"}
                 </button>
               )}
@@ -513,7 +512,7 @@ export default function MatchDetailPage() {
                   onClick={() => setModal("abandon")}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 py-3 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100"
                 >
-                  <span className="material-symbols-outlined text-lg">block</span>
+                  <Icon name="block" className="" />
                   {isUpcoming ? "Cancel Match" : "Abandon Match"}
                 </button>
               )}
@@ -525,7 +524,7 @@ export default function MatchDetailPage() {
                   onClick={() => setModal("delete")}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-semibold text-error transition-colors hover:bg-red-100"
                 >
-                  <span className="material-symbols-outlined text-lg">delete</span>
+                  <Icon name="delete" className="" />
                   Delete Match
                 </button>
               )}

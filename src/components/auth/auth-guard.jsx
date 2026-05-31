@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { clearAuthSession, getStoredToken } from "@/lib/auth";
+import { Icon } from "@/components/ui/icon";
 
 export function AuthGuard({ children }) {
   const router = useRouter();
@@ -37,12 +38,7 @@ export function AuthGuard({ children }) {
             <span className="absolute h-20 w-20 animate-spin rounded-full border-4 border-transparent border-t-primary border-r-primary/40" style={{ animationDuration: "1s" }} />
             {/* Inner icon */}
             <div className="flex h-12 w-12 items-center justify-center rounded-full cricket-gradient shadow-lg">
-              <span
-                className="material-symbols-outlined text-2xl text-white"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                sports_cricket
-              </span>
+              <Icon name="sports_cricket" className="text-2xl text-white" />
             </div>
           </div>
           <div className="text-center">

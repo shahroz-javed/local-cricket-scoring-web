@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { Icon } from "@/components/ui/icon";
 
 export default function LiveScoreboardPage() {
   return (
@@ -13,7 +14,7 @@ export default function LiveScoreboardPage() {
           href="/scorecard"
           className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-2 text-sm font-semibold text-foreground hover:bg-surface-container transition-colors"
         >
-          <span className="material-symbols-outlined text-base">table_rows</span>
+          <Icon name="table_rows" className="text-base" />
           Full Scorecard
         </Link>
       }

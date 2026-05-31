@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/components/ui/icon";
 
 export function AuthShell({ title, subtitle, leftContent, children }) {
   return (
@@ -17,7 +18,7 @@ export function AuthShell({ title, subtitle, leftContent, children }) {
         <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)" }} />
         <div className="relative z-10 flex h-full flex-col justify-between p-10">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-3xl text-white">sports_cricket</span>
+            <Icon name="sports_cricket" className="text-3xl text-white" />
             <span className="font-display text-2xl font-bold tracking-tight text-white">CricketApp</span>
           </div>
           {leftContent ?? (
@@ -34,7 +35,7 @@ export function AuthShell({ title, subtitle, leftContent, children }) {
                 ].map((feature) => (
                   <div key={feature.title} className="flex items-center gap-3 text-white/90">
                     <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/15">
-                      <span className="material-symbols-outlined text-lg text-white" style={{ fontVariationSettings: "'FILL' 1" }}>{feature.icon}</span>
+                      <Icon name={feature.icon} className="text-lg text-white" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold">{feature.title}</p>
@@ -52,7 +53,7 @@ export function AuthShell({ title, subtitle, leftContent, children }) {
       <section className="flex min-h-screen w-full flex-col items-center justify-center overflow-y-auto bg-surface px-6 py-12 md:w-7/12 md:px-12 lg:w-3/5 lg:px-16">
         <div className="flex w-full max-w-md flex-col gap-7">
           <div className="flex items-center gap-2 md:hidden">
-            <span className="material-symbols-outlined text-2xl text-primary">sports_cricket</span>
+            <Icon name="sports_cricket" className="text-2xl text-primary" />
             <span className="font-display text-xl font-bold tracking-tight text-foreground">CricketApp</span>
           </div>
           <div>

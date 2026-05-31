@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
+import { Icon } from "@/components/ui/icon";
 
 export default function ScorecardPage() {
   const [activeTab, setActiveTab] = useState("batting");
@@ -25,11 +26,11 @@ export default function ScorecardPage() {
             href="/live-scoreboard"
             className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-2 text-sm font-semibold text-foreground hover:bg-surface-container transition-colors"
           >
-            <span className="material-symbols-outlined text-base">arrow_back</span>
+            <Icon name="arrow_back" className="text-base" />
             Live
           </Link>
           <button className="inline-flex items-center gap-1.5 rounded-xl border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-fixed transition-colors">
-            <span className="material-symbols-outlined text-base">share</span>
+            <Icon name="share" className="text-base" />
             Share
           </button>
         </div>

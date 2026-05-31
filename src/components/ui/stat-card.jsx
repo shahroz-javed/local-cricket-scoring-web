@@ -1,14 +1,4 @@
-import type { ReactNode } from "react";
-
-type StatCardProps = {
-  icon: string;
-  label: string;
-  value: string;
-  badge?: string;
-  iconClassName?: string;
-  rightNode?: ReactNode;
-};
-
+import { Icon } from "@/components/ui/icon";
 export function StatCard({
   icon,
   label,
@@ -16,12 +6,12 @@ export function StatCard({
   badge,
   iconClassName,
   rightNode,
-}: StatCardProps) {
+}) {
   return (
     <article className="rounded-2xl border border-outline-variant/70 bg-surface p-4 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="rounded-xl bg-primary-fixed p-2.5">
-          <span className={`material-symbols-outlined text-xl text-primary ${iconClassName ?? ""}`}>{icon}</span>
+          <Icon name={icon} className={`text-xl text-primary ${iconClassName ?? ""}`} />
         </div>
         {rightNode ? rightNode : null}
       </div>
@@ -35,4 +25,3 @@ export function StatCard({
     </article>
   );
 }
-

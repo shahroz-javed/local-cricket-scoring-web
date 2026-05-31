@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
+import { Icon } from "@/components/ui/icon";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("notifications");
@@ -32,12 +33,7 @@ export default function SettingsPage() {
                       : "text-foreground-muted hover:bg-surface-container-low hover:text-foreground"
                   }`}
                 >
-                  <span
-                    className="material-symbols-outlined text-xl"
-                    style={{ fontVariationSettings: activeTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}
-                  >
-                    {tab.icon}
-                  </span>
+                  <Icon name={tab.icon} className="text-xl" />
                   {tab.label}
                 </button>
               </div>
@@ -105,7 +101,7 @@ export default function SettingsPage() {
                   <div key={f.label} className="space-y-1.5">
                     <label className="text-sm font-semibold text-foreground">{f.label}</label>
                     <div className="relative">
-                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">{f.icon}</span>
+                      <Icon name={f.icon} className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" />
                       <input type="password" placeholder={f.placeholder} className="w-full rounded-xl border border-outline-variant bg-surface-container-low py-3 pl-10 pr-4 text-sm outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary" />
                     </div>
                   </div>
@@ -121,7 +117,7 @@ export default function SettingsPage() {
             <div className="overflow-hidden rounded-2xl border-2 border-error/30 bg-white">
               <div className="border-b border-error/20 bg-red-50 px-6 py-4">
                 <h2 className="flex items-center gap-2 font-display font-bold text-error">
-                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                  <Icon name="warning" className="" />
                   Danger Zone
                 </h2>
                 <p className="mt-0.5 text-xs text-foreground-muted">These actions are irreversible. Please be certain.</p>
@@ -155,7 +151,7 @@ function NotificationToggle({ icon, iconColor, title, description, defaultChecke
   return (
     <div className="flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container-low p-4">
       <div className="flex items-center gap-3">
-        <span className={`material-symbols-outlined text-xl ${iconColor}`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+        <Icon name={icon} className={`text-xl ${iconColor}`} />
         <div>
           <p className="text-sm font-semibold text-foreground">{title}</p>
           <p className="text-xs text-foreground-muted">{description}</p>

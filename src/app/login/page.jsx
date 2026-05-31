@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { apiRequest } from "@/lib/api";
+import { Icon } from "@/components/ui/icon";
 import { setAuthSession } from "@/lib/auth";
 
 export default function LoginPage() {
@@ -79,7 +80,7 @@ export default function LoginPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-foreground">Email Address</label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">mail</span>
+              <Icon name="mail" className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" />
               <input
                 type="email"
                 placeholder="name@example.com"
@@ -98,7 +99,7 @@ export default function LoginPage() {
               </Link>
             </div>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">lock</span>
+              <Icon name="lock" className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" />
               <input
                 type="password"
                 placeholder="Enter your password"

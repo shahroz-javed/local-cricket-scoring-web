@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { Icon } from "@/components/ui/icon";
 
 export default function TournamentsPage() {
   return (
@@ -13,12 +14,12 @@ export default function TournamentsPage() {
             {/* Trophy icon */}
             <div className="float-anim inline-block mb-4">
               <div className="w-24 h-24 rounded-3xl gold-gradient flex items-center justify-center shadow-xl mx-auto">
-                <span className="material-symbols-outlined text-white text-5xl" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                <Icon name="emoji_events" className="text-5xl text-white" />
               </div>
             </div>
 
             <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full mb-4">
-              <span className="material-symbols-outlined text-sm">auto_awesome</span>
+              <Icon name="auto_awesome" className="text-sm" />
               COMING SOON — PHASE T1
             </div>
 
@@ -48,7 +49,7 @@ export default function TournamentsPage() {
               <span className="bg-amber-50 text-amber-700 text-xs font-bold px-2 py-1 rounded-full border border-amber-200">Coming Soon</span>
             </div>
             <div className="w-12 h-12 rounded-xl cricket-gradient flex items-center justify-center mb-3">
-              <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>table_rows</span>
+              <Icon name="table_rows" className="text-2xl text-white" />
             </div>
             <h3 className="font-display font-bold text-foreground mb-1">League Format</h3>
             <p className="text-sm text-foreground-muted">Round-robin group stages with full points table, NRR, and automatic qualification.</p>
@@ -63,7 +64,7 @@ export default function TournamentsPage() {
               <span className="bg-amber-50 text-amber-700 text-xs font-bold px-2 py-1 rounded-full border border-amber-200">Coming Soon</span>
             </div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg,#ab0b1c,#ef4444)" }}>
-              <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_tree</span>
+              <Icon name="account_tree" className="text-2xl text-white" />
             </div>
             <h3 className="font-display font-bold text-foreground mb-1">Knockout Bracket</h3>
             <p className="text-sm text-foreground-muted">Single or double elimination brackets with auto-generated match fixtures.</p>
@@ -78,7 +79,7 @@ export default function TournamentsPage() {
               <span className="bg-amber-50 text-amber-700 text-xs font-bold px-2 py-1 rounded-full border border-amber-200">Coming Soon</span>
             </div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg,#006e2f,#22c55e)" }}>
-              <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>leaderboard</span>
+              <Icon name="leaderboard" className="text-2xl text-white" />
             </div>
             <h3 className="font-display font-bold text-foreground mb-1">Points Table</h3>
             <p className="text-sm text-foreground-muted">Live standings with NRR, wins, losses, and real-time updates after every match.</p>
@@ -104,7 +105,7 @@ export default function TournamentsPage() {
               <span className="bg-amber-50 text-amber-700 text-xs font-bold px-2 py-1 rounded-full border border-amber-200">Coming Soon</span>
             </div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)" }}>
-              <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>bar_chart</span>
+              <Icon name="bar_chart" className="text-2xl text-white" />
             </div>
             <h3 className="font-display font-bold text-foreground mb-1">Tournament Stats</h3>
             <p className="text-sm text-foreground-muted">Top run-scorers, wicket-takers, and best performances across the entire tournament.</p>
@@ -123,7 +124,7 @@ export default function TournamentsPage() {
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                  <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                  <Icon name="check" className="text-sm text-white" />
                 </div>
                 <div className="flex-1 w-0.5 bg-secondary mt-1"></div>
               </div>
@@ -135,7 +136,7 @@ export default function TournamentsPage() {
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
                 <div className="w-8 h-8 rounded-full cricket-gradient flex items-center justify-center">
-                  <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>sync</span>
+                  <Icon name="sync" className="text-sm text-white" />
                 </div>
                 <div className="flex-1 w-0.5 bg-outline-variant mt-1"></div>
               </div>
@@ -147,7 +148,7 @@ export default function TournamentsPage() {
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
                 <div className="w-8 h-8 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-amber-600 text-sm">schedule</span>
+                  <Icon name="schedule" className="text-sm text-amber-600" />
                 </div>
                 <div className="flex-1 w-0.5 bg-outline-variant mt-1"></div>
               </div>
@@ -158,7 +159,7 @@ export default function TournamentsPage() {
             </div>
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-surface-container border-2 border-outline-variant flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-outline text-sm">lock</span>
+                <Icon name="lock" className="text-sm text-outline" />
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-foreground-muted text-sm">Phase T2–T5: Full Tournament Platform</p>
@@ -171,4 +172,3 @@ export default function TournamentsPage() {
     </AppShell>
   );
 }
-

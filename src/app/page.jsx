@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/components/ui/icon";
 
 export default function Home() {
   return (
@@ -20,7 +21,7 @@ export default function Home() {
             </Link>
             <a href="#features" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">Features</a>
             <a href="#how-it-works" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">How It Works</a>
-            <a href="#roadmap" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">Roadmap</a>
+            
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-foreground font-semibold text-sm px-4 py-2 rounded-xl hover:bg-surface-mid transition-colors">Sign In</Link>
@@ -59,7 +60,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="flex items-center gap-2 text-sm text-foreground-muted">
-              <span className="material-symbols-outlined material-symbols-filled text-secondary text-lg">check_circle</span>
+            <Icon name="check_circle" className="text-lg text-secondary" />
               No login needed to view live scoreboard — share with anyone
             </div>
           </div>
@@ -109,7 +110,7 @@ export default function Home() {
               </div>
             </div>
             <div className="px-5 py-3 border-t border-outline-variant bg-surface-low flex justify-between items-center text-xs text-foreground-muted">
-              <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">lock</span>Ahmed scoring</span>
+              <span className="flex items-center gap-1"><Icon name="lock" className="text-sm" />Ahmed scoring</span>
               <Link href="/live-scoreboard" className="text-primary font-semibold">View Full Scorecard →</Link>
             </div>
           </div>
@@ -132,7 +133,7 @@ export default function Home() {
             { icon: "emoji_events", title: "Tournaments", desc: "League tables, knockout brackets, NRR calculations, and auto-generated fixtures. Coming in Phase T1.", badge: "Coming Soon" },
           ].map((f) => (
             <div key={f.title} className="bg-white border border-outline-variant p-8 rounded-2xl hover:border-primary/40 transition-colors hover:shadow-md">
-              <span className="material-symbols-outlined material-symbols-filled text-primary text-4xl mb-4 block">{f.icon}</span>
+              <Icon name={f.icon} className="mb-4 block text-4xl text-primary" />
               <h3 className="text-xl font-bold font-display mb-2">
                 {f.title}
                 {f.badge && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full ml-2">{f.badge}</span>}
@@ -166,48 +167,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Roadmap */}
-      <section className="py-24 px-6 md:px-8 max-w-7xl mx-auto" id="roadmap">
-        <div className="text-center mb-16">
-          <h2 className="font-display text-4xl font-bold text-foreground">Platform Roadmap</h2>
-        </div>
-        <div className="relative max-w-2xl mx-auto">
-          <div className="absolute left-8 top-0 bottom-0 w-px bg-outline-variant"></div>
-          <div className="space-y-10">
-            <div className="flex gap-6 items-start">
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-white ring-8 ring-background shadow-lg flex-shrink-0">
-                <span className="material-symbols-outlined material-symbols-filled">check</span>
-              </div>
-              <div className="pt-3">
-                <span className="text-xs font-bold text-secondary uppercase">Complete</span>
-                <h4 className="text-xl font-bold font-display">Phases 1–5: Core App</h4>
-                <p className="text-foreground-muted text-sm">Auth, teams, matches, live scoring, scorecards & stats — all shipped.</p>
-              </div>
-            </div>
-            <div className="flex gap-6 items-start">
-              <div className="w-16 h-16 rounded-full cricket-gradient flex items-center justify-center text-white ring-8 ring-background shadow-lg flex-shrink-0">
-                <span className="material-symbols-outlined">sync</span>
-              </div>
-              <div className="pt-3">
-                <span className="text-xs font-bold text-primary uppercase">In Progress</span>
-                <h4 className="text-xl font-bold font-display">Phases 6–8: Web App</h4>
-                <p className="text-foreground-muted text-sm">Next.js frontend, public live scoreboard, mobile-first UI.</p>
-              </div>
-            </div>
-            <div className="flex gap-6 items-start">
-              <div className="w-16 h-16 rounded-full bg-white border-2 border-outline-variant flex items-center justify-center ring-8 ring-background shadow-lg flex-shrink-0">
-                <span className="material-symbols-outlined text-amber-500">emoji_events</span>
-              </div>
-              <div className="pt-3">
-                <span className="text-xs font-bold text-amber-600 uppercase">Upcoming</span>
-                <h4 className="text-xl font-bold font-display">Phase T1: Tournament Suite</h4>
-                <p className="text-foreground-muted text-sm">Bracket generation, league standings, NRR, auto-fixtures.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
+      
       {/* CTA Section */}
       <section className="py-24 px-6 md:px-8 bg-inverse-surface">
         <div className="max-w-3xl mx-auto text-center space-y-8">

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { navItems } from "./nav-config";
 import { useUser } from "@/lib/user-context";
+import { Icon } from "@/components/ui/icon";
 
 function isItemActive(pathname, href) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -53,7 +54,7 @@ function UserDropdown({ user, signOut }) {
         <span className="hidden max-w-[120px] truncate text-sm font-semibold text-foreground md:block">
           {user?.name?.split(" ")[0] ?? "Account"}
         </span>
-        <span className="material-symbols-outlined text-lg text-outline">expand_more</span>
+        <Icon name="expand_more" className="text-lg text-outline" />
       </button>
 
       {open ? (
@@ -74,7 +75,7 @@ function UserDropdown({ user, signOut }) {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-surface-container-low"
             >
-              <span className="material-symbols-outlined text-lg text-outline">person</span>
+              <Icon name="person" className="text-lg text-outline" />
               My Profile
             </Link>
             <Link
@@ -82,7 +83,7 @@ function UserDropdown({ user, signOut }) {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-surface-container-low"
             >
-              <span className="material-symbols-outlined text-lg text-outline">settings</span>
+              <Icon name="settings" className="text-lg text-outline" />
               Settings
             </Link>
           </div>
@@ -93,7 +94,7 @@ function UserDropdown({ user, signOut }) {
               onClick={() => { setOpen(false); signOut(); }}
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-foreground-muted transition-colors hover:bg-red-50 hover:text-red-600"
             >
-              <span className="material-symbols-outlined text-lg">logout</span>
+              <Icon name="logout" className="text-lg" />
               Sign Out
             </button>
           </div>
@@ -114,7 +115,7 @@ export function AppShell({ title, subtitle, action, children }) {
       {/* Sidebar — desktop */}
       <aside className="hidden w-64 flex-col border-r border-outline-variant bg-surface lg:flex">
         <div className="flex items-center gap-2 border-b border-outline-variant px-5 py-4">
-          <span className="material-symbols-outlined text-2xl text-primary">sports_cricket</span>
+          <Icon name="sports_cricket" className="text-2xl text-primary" />
           <p className="font-display text-lg font-bold">CricketApp</p>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -130,7 +131,7 @@ export function AppShell({ title, subtitle, action, children }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors text-foreground-muted hover:bg-surface-container-low hover:text-foreground"
                 >
-                  <span className="material-symbols-outlined text-xl">{item.icon}</span>
+                  <Icon name={item.icon} className="text-xl" />
                   <span>{item.label}</span>
                 </a>
               );
@@ -146,9 +147,7 @@ export function AppShell({ title, subtitle, action, children }) {
                     : "text-foreground-muted hover:bg-surface-container-low hover:text-foreground"
                 }`}
               >
-                <span className={`material-symbols-outlined text-xl ${active ? "material-symbols-filled" : ""}`}>
-                  {item.icon}
-                </span>
+                <Icon name={item.icon} className={`text-xl ${active ? "" : ""}`} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -187,9 +186,7 @@ export function AppShell({ title, subtitle, action, children }) {
                 active ? "text-primary" : "text-foreground-muted"
               }`}
             >
-              <span className={`material-symbols-outlined text-xl ${active ? "material-symbols-filled" : ""}`}>
-                {item.icon}
-              </span>
+              <Icon name={item.icon} className="text-xl" />
               <span>{item.label.replace("My ", "")}</span>
             </Link>
           );

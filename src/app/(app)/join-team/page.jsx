@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { apiRequest } from "@/lib/api";
 import { useUser } from "@/lib/user-context";
+import { Icon } from "@/components/ui/icon";
 
 const PLAYER_TYPE_LABELS = {
   batter:               { label: "Batter",           icon: "🏏" },
@@ -59,21 +60,21 @@ function TeamPreview({ result, onSend, sending }) {
   if (is_member) {
     statusBlock = (
       <div className="flex items-center gap-2 rounded-xl border border-secondary/30 bg-green-50 px-4 py-3 text-sm font-semibold text-secondary">
-        <span className="material-symbols-outlined text-lg">check_circle</span>
+        <Icon name="check_circle" className="" />
         You are already a member of this team.
       </div>
     );
   } else if (request_status === "pending") {
     statusBlock = (
       <div className="flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-sm font-semibold text-foreground-muted">
-        <span className="material-symbols-outlined text-lg">hourglass_top</span>
+        <Icon name="hourglass_top" className="" />
         Join request sent — waiting for captain to approve.
       </div>
     );
   } else if (request_status === "approved") {
     statusBlock = (
       <div className="flex items-center gap-2 rounded-xl border border-secondary/30 bg-green-50 px-4 py-3 text-sm font-semibold text-secondary">
-        <span className="material-symbols-outlined text-lg">check_circle</span>
+        <Icon name="check_circle" className="" />
         Your request was approved. You are now a member!
       </div>
     );
@@ -81,7 +82,7 @@ function TeamPreview({ result, onSend, sending }) {
     statusBlock = (
       <div className="space-y-3">
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          <span className="material-symbols-outlined text-lg">cancel</span>
+          <Icon name="cancel" className="" />
           Your previous request was rejected. You can send a new one.
         </div>
         <button
@@ -89,7 +90,7 @@ function TeamPreview({ result, onSend, sending }) {
           disabled={sending}
           className="cricket-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white disabled:opacity-70"
         >
-          {sending ? <Spinner /> : <span className="material-symbols-outlined text-lg">send</span>}
+          {sending ? <Spinner /> : <Icon name="send" className="" />}
           Send New Request
         </button>
       </div>
@@ -101,7 +102,7 @@ function TeamPreview({ result, onSend, sending }) {
         disabled={sending}
         className="cricket-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white disabled:opacity-70"
       >
-        {sending ? <Spinner /> : <span className="material-symbols-outlined text-lg">send</span>}
+        {sending ? <Spinner /> : <Icon name="send" className="" />}
         Send Join Request
       </button>
     );
@@ -194,7 +195,7 @@ function MyRequests({ token, refreshKey }) {
                 className="rounded-lg p-1.5 text-outline transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                 title="Cancel request"
               >
-                {cancelling === r.id ? <Spinner /> : <span className="material-symbols-outlined text-lg">close</span>}
+                {cancelling === r.id ? <Spinner /> : <Icon name="close" className="" />}
               </button>
             ) : null}
           </div>
@@ -208,7 +209,8 @@ function MyRequests({ token, refreshKey }) {
 
 export default function JoinTeamPage() {
   const { token } = useUser();
-  const [code, setCode] = useState("");
+  const TEAM_PREFIX = "TEAM-";
+  const [code, setCode] = useState(TEAM_PREFIX);
   const [looking, setLooking] = useState(false);
   const [lookupResult, setLookupResult] = useState(null);
   const [lookupError, setLookupError] = useState("");
@@ -276,16 +278,19 @@ export default function JoinTeamPage() {
               <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{lookupError}</p>
             ) : null}
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">group_add</span>
+              <Icon name="group_add" className="" />
               <input
                 type="text"
                 value={code}
                 onChange={(e) => {
-                  setCode(e.target.value.toUpperCase());
+                  const upper = e.target.value.toUpperCase();
+                  const suffix = upper.startsWith(TEAM_PREFIX) ? upper.slice(TEAM_PREFIX.length) : upper;
+                  const cleaned = suffix.replace(/[^A-Z0-9]/g, "").slice(0, 6);
+                  setCode(`${TEAM_PREFIX}${cleaned}`);
                   setLookupResult(null);
                   setLookupError("");
                 }}
-                placeholder="TEAM-XXXXXX"
+                placeholder="TEAM-"
                 maxLength={11}
                 className="w-full rounded-xl border border-outline-variant bg-surface-container-low py-3 pl-12 pr-4 font-mono text-base tracking-widest text-foreground placeholder-outline focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary"
                 required
@@ -296,7 +301,7 @@ export default function JoinTeamPage() {
               disabled={looking || code.length < 6}
               className="cricket-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white disabled:opacity-70"
             >
-              {looking ? <Spinner /> : <span className="material-symbols-outlined text-lg">search</span>}
+              {looking ? <Spinner /> : <Icon name="search" className="" />}
               Find Team
             </button>
           </form>

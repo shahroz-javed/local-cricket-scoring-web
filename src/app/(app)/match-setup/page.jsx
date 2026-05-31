@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { Icon } from "@/components/ui/icon";
 import { apiRequest } from "@/lib/api";
 import { useUser } from "@/lib/user-context";
 
@@ -20,11 +21,10 @@ function Spinner({ size = "sm" }) {
 
 function Check({ done }) {
   return done ? (
-    <span className="material-symbols-outlined text-xl text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>
-      check_circle
-    </span>
+    <Icon name="check_circle" className="text-xl text-secondary" />
+    
   ) : (
-    <span className="material-symbols-outlined text-xl text-outline">radio_button_unchecked</span>
+    <Icon name="radio_button_unchecked" className="text-xl text-outline" />
   );
 }
 
@@ -32,7 +32,7 @@ function SectionHeader({ icon, title, done, children }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white">
       <div className={`flex items-center gap-3 border-b px-5 py-4 ${done ? "border-secondary/20 bg-green-50" : "border-outline-variant"}`}>
-        <span className="material-symbols-outlined text-xl text-primary">{icon}</span>
+        <Icon name={icon} className="text-xl text-primary" />
         <h3 className="flex-1 font-display text-base font-bold text-foreground">{title}</h3>
         <Check done={done} />
       </div>
@@ -125,10 +125,7 @@ function TossSection({ match, token, onUpdated }) {
                       : "border-outline-variant bg-white hover:border-primary"
                   }`}
                 >
-                  <span
-                    className={`material-symbols-outlined text-3xl mb-1 ${decision === opt.id ? "text-primary" : "text-foreground-muted"}`}
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >{opt.icon}</span>
+                  <Icon name={opt.icon} className={`mb-1 text-3xl ${decision === opt.id ? "text-primary" : "text-foreground-muted"}`} />
                   <p className="font-display font-bold text-foreground text-sm">{opt.label}</p>
                   <p className="text-xs text-foreground-muted">{opt.sub}</p>
                 </button>
@@ -142,12 +139,12 @@ function TossSection({ match, token, onUpdated }) {
           <div className="rounded-xl border border-secondary/20 bg-green-50 p-3 space-y-1.5">
             <p className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">Innings Order</p>
             <div className="flex items-center gap-2 text-sm">
-              <span className="material-symbols-outlined text-base text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_cricket</span>
+              <Icon name="sports_cricket" className="text-base text-primary" />
               <span className="font-semibold text-foreground">{battingFirst.name}</span>
               <span className="rounded-full bg-primary-fixed px-2 py-0.5 text-xs font-semibold text-primary">Bat 1st</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="material-symbols-outlined text-base text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_baseball</span>
+              <Icon name="sports_baseball" className="text-base text-secondary" />
               <span className="font-semibold text-foreground">{bowlingFirst.name}</span>
               <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-secondary">Bowl 1st</span>
             </div>
@@ -169,7 +166,7 @@ function TossSection({ match, token, onUpdated }) {
         )}
         {saved && (
           <p className="text-sm font-semibold text-secondary flex items-center gap-1">
-            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+            <Icon name="check_circle" className="text-base" />
             Toss saved
           </p>
         )}
@@ -224,7 +221,7 @@ function PlayerRow({ member, selected, onToggle, isSub, onSubToggle }) {
               : "bg-surface-container text-foreground-muted hover:bg-amber-100 hover:text-amber-700"
           }`}
         >
-          {isSub ? "Sub" : "XI"}
+          {isSub ? "Sub" : "In"}
         </button>
       )}
 
@@ -232,8 +229,7 @@ function PlayerRow({ member, selected, onToggle, isSub, onSubToggle }) {
         selected ? "border-primary bg-primary" : "border-outline-variant"
       }`}>
         {selected && (
-          <span className="material-symbols-outlined text-xs text-white flex items-center justify-center h-full"
-            style={{ fontVariationSettings: "'FILL' 1", fontSize: "12px" }}>check</span>
+          <Icon name="check" className="flex h-full items-center justify-center text-xs text-white" />
         )}
       </div>
     </div>
@@ -253,11 +249,11 @@ function PlayingXISection({ match, matchTeam, token, onUpdated }) {
   const [subs,     setSubs]     = useState(initSubs);
   const [saving,   setSaving]   = useState(false);
   const [error,    setError]    = useState("");
-  const [saved,    setSaved]    = useState(existingForTeam.length >= 11);
+  const [saved,    setSaved]    = useState(existingForTeam.length > 0);
 
-  const xiCount  = [...selected].filter((id) => !subs.has(id)).length;
+  const activeCount = [...selected].filter((id) => !subs.has(id)).length;
   const subCount = [...selected].filter((id) =>  subs.has(id)).length;
-  const done     = xiCount >= 11;
+  const done     = activeCount > 0;
 
   function toggleSelect(memberId) {
     setSelected((prev) => {
@@ -283,7 +279,7 @@ function PlayingXISection({ match, matchTeam, token, onUpdated }) {
   }
 
   async function save() {
-    if (xiCount < 11) return;
+    if (selected.size === 0) return;
     setSaving(true); setError("");
     try {
       const players = [...selected].map((memberId) => ({
@@ -297,7 +293,7 @@ function PlayingXISection({ match, matchTeam, token, onUpdated }) {
       setSaved(true);
       onUpdated();
     } catch (err) {
-      setError(err?.data?.message || "Could not save playing XI.");
+      setError(err?.data?.message || "Could not save squad.");
     } finally {
       setSaving(false);
     }
@@ -306,24 +302,21 @@ function PlayingXISection({ match, matchTeam, token, onUpdated }) {
   return (
     <SectionHeader
       icon="groups"
-      title={`${team.name} — Playing XI`}
+      title={`${team.name} — Playing Squad`}
       done={done && saved}
     >
       <div className="space-y-3">
         {/* Counter */}
         <div className="flex items-center gap-3">
           <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-            xiCount >= 11 ? "bg-green-100 text-secondary" : "bg-primary-fixed text-primary"
+            activeCount > 0 ? "bg-green-100 text-secondary" : "bg-primary-fixed text-primary"
           }`}>
-            {xiCount} / 11 selected
+            {activeCount} active selected
           </span>
           {subCount > 0 && (
             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
               +{subCount} sub{subCount > 1 ? "s" : ""}
             </span>
-          )}
-          {xiCount > 11 && (
-            <span className="text-xs font-semibold text-error">Too many players in XI</span>
           )}
         </div>
 
@@ -345,7 +338,7 @@ function PlayingXISection({ match, matchTeam, token, onUpdated }) {
         )}
 
         <p className="text-xs text-foreground-muted">
-          Tap a player to select. Tap <strong>XI</strong> badge to mark as substitute (won't count in your 11).
+          Tap a player to select. Tap <strong>Sub</strong> badge to mark as substitute.
         </p>
 
         {error && <p className="text-xs text-error font-semibold">{error}</p>}
@@ -354,17 +347,17 @@ function PlayingXISection({ match, matchTeam, token, onUpdated }) {
           <button
             type="button"
             onClick={save}
-            disabled={saving || xiCount < 11 || xiCount > 11}
+            disabled={saving || selected.size === 0}
             className="cricket-gradient flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
           >
             {saving ? <Spinner /> : null}
-            Confirm XI
+            Save Squad
           </button>
         )}
         {saved && (
           <p className="text-sm font-semibold text-secondary flex items-center gap-1">
-            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-            Playing XI confirmed
+            <Icon name="check_circle" className="text-base" />
+            Squad saved
           </p>
         )}
       </div>
@@ -472,8 +465,8 @@ function ReadinessBar({ match, teamADone, teamBDone }) {
   const tossDone = !!(match.toss_winner_team_id && match.toss_decision);
   const items = [
     { label: "Toss recorded",         done: tossDone },
-    { label: "Home XI confirmed",     done: teamADone },
-    { label: "Away XI confirmed",     done: teamBDone },
+    { label: "Home squad saved",      done: teamADone },
+    { label: "Away squad saved",      done: teamBDone },
   ];
   const allDone = items.every((i) => i.done);
 
@@ -481,17 +474,12 @@ function ReadinessBar({ match, teamADone, teamBDone }) {
     <div className={`overflow-hidden rounded-2xl border-2 ${allDone ? "border-secondary bg-green-50" : "border-outline-variant bg-white"}`}>
       <div className="px-5 py-4">
         <p className="font-display text-base font-bold text-foreground mb-3">
-          {allDone ? "✅ Ready to Start!" : "Pre-match Checklist"}
+          {allDone ? "Ready to Start" : "Pre-match Checklist"}
         </p>
         <div className="space-y-2">
           {items.map(({ label, done }) => (
             <div key={label} className="flex items-center gap-2">
-              <span
-                className={`material-symbols-outlined text-lg ${done ? "text-secondary" : "text-outline"}`}
-                style={{ fontVariationSettings: done ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                {done ? "check_circle" : "radio_button_unchecked"}
-              </span>
+              <Icon name={done ? "check_circle" : "radio_button_unchecked"} className={`text-lg ${done ? "text-secondary" : "text-outline"}`} />
               <span className={`text-sm font-semibold ${done ? "text-foreground" : "text-foreground-muted"}`}>{label}</span>
             </div>
           ))}
@@ -515,7 +503,7 @@ export default function MatchSetupPage() {
   const [starting, setStarting] = useState(false);
   const [startErr, setStartErr] = useState("");
 
-  // Track XI confirmation per team locally (re-derived on load)
+  // Track squad confirmation per team locally (re-derived on load)
   const [xiDone, setXiDone] = useState({});
 
   const loadMatch = useCallback(async () => {
@@ -524,13 +512,13 @@ export default function MatchSetupPage() {
       const data = await apiRequest(`/api/matches/${code}`, { token });
       setMatch(data);
 
-      // Derive which teams already have 11+ non-sub players
+      // Derive which teams already have at least one active player selected
       const done = {};
       for (const mt of data.match_teams ?? []) {
         const xi = (data.players ?? []).filter(
           (p) => p.team_id === mt.team.id && !p.is_substitute
         ).length;
-        done[mt.team.id] = xi >= 11;
+        done[mt.team.id] = xi > 0;
       }
       setXiDone(done);
     } catch (err) {
@@ -597,7 +585,7 @@ export default function MatchSetupPage() {
           href="/my-matches"
           className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-2 text-sm font-semibold text-foreground-muted hover:bg-surface-container transition-colors"
         >
-          <span className="material-symbols-outlined text-lg">arrow_back</span>
+          <Icon name="arrow_back" className="text-lg" />
           My Matches
         </Link>
       }
@@ -631,7 +619,7 @@ export default function MatchSetupPage() {
           />
         )}
 
-        {/* Playing XIs */}
+        {/* Playing squads */}
         {teamA && (
           <PlayingXISection
             key={`xi-${teamA.team.id}`}
@@ -665,7 +653,7 @@ export default function MatchSetupPage() {
 
             {!allReady && (
               <p className="mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-                <span className="material-symbols-outlined text-lg">warning</span>
+                <Icon name="warning" className="text-lg" />
                 Complete the checklist above before starting.
               </p>
             )}
@@ -680,7 +668,7 @@ export default function MatchSetupPage() {
               disabled={!allReady || starting}
               className="cricket-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
             >
-              {starting ? <Spinner /> : <span className="material-symbols-outlined text-lg">sports_cricket</span>}
+              {starting ? <Spinner /> : <Icon name="sports_cricket" className="text-lg" />}
               {starting ? "Starting…" : "Start Match"}
             </button>
           </div>
@@ -688,7 +676,7 @@ export default function MatchSetupPage() {
 
         {!isCreator && (
           <div className="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
-            <span className="material-symbols-outlined text-lg text-outline">info</span>
+            <Icon name="info" className="text-lg text-outline" />
             <p className="text-sm text-foreground-muted">Only the match creator can start the match.</p>
           </div>
         )}

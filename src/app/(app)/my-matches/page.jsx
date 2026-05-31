@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { apiRequest } from "@/lib/api";
 import { useUser } from "@/lib/user-context";
+import { Icon } from "@/components/ui/icon";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,13 +22,23 @@ function teamPair(match) {
   return { home: home?.name ?? "TBD", away: away?.name ?? "TBD" };
 }
 
+function matchFormatLabel(match) {
+  if (match?.match_type === "single_wicket") return "Single Wicket";
+  if (match?.match_type === "T20") return "T20";
+  if (match?.match_type === "ODI") return "ODI";
+  if (match?.match_type === "T10") return "T10";
+  if (match?.match_type === "Custom" && match?.overs_limit) return `Custom - ${match.overs_limit} overs`;
+  if (match?.overs_limit) return `${match.overs_limit} overs`;
+  return "Match Format";
+}
+
 function PageSpinner() {
   return (
     <div className="flex flex-col items-center gap-4 py-20">
       <div className="relative flex h-14 w-14 items-center justify-center">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-10" />
         <span className="absolute h-14 w-14 animate-spin rounded-full border-4 border-transparent border-t-primary border-r-primary/40" />
-        <span className="material-symbols-outlined text-xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_cricket</span>
+        <Icon name="sports_cricket" className="text-xl text-primary" />
       </div>
       <p className="text-sm text-foreground-muted">Loading matches…</p>
     </div>
@@ -36,16 +47,23 @@ function PageSpinner() {
 
 // ─── Cards ────────────────────────────────────────────────────────────────────
 
-function LiveCard({ match }) {
+function LiveCard({ match, status = "live" }) {
   const { home, away } = teamPair(match);
+  const isBreak = status === "innings_break";
+  const label = isBreak ? "INNINGS BREAK" : "LIVE NOW";
   return (
     <article className="overflow-hidden rounded-2xl border-2 border-tertiary/30 bg-white shadow-md">
-      <div className="cricket-gradient flex items-center justify-between px-4 py-3">
+      <div className={`flex items-center justify-between px-4 py-3 ${isBreak ? "bg-amber-100" : "cricket-gradient"}`}>
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-          <span className="text-xs font-bold text-white">LIVE NOW</span>
+          <span className={`h-2 w-2 animate-pulse rounded-full ${isBreak ? "bg-amber-600" : "bg-white"}`} />
+          <span className={`text-xs font-bold ${isBreak ? "text-amber-800" : "text-white"}`}>{label}</span>
         </div>
-        <span className="font-mono text-xs text-white/70">{match.code}</span>
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isBreak ? "bg-white/60 text-amber-800" : "bg-white/15 text-white"}`}>
+            {matchFormatLabel(match)}
+          </span>
+          <span className={`font-mono text-xs ${isBreak ? "text-amber-800/70" : "text-white/70"}`}>{match.code}</span>
+        </div>
       </div>
       <div className="p-4">
         <div className="mb-3 flex items-center justify-between">
@@ -64,7 +82,7 @@ function LiveCard({ match }) {
           </div>
         </div>
         <div className="mb-3 flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low p-3">
-          <span className="material-symbols-outlined text-lg text-foreground-muted">location_on</span>
+          <Icon name="location_on" className="" />
           <div>
             <p className="text-xs text-foreground-muted">
               {[match.venue, match.overs_limit ? `${match.overs_limit} overs` : null].filter(Boolean).join(" · ") || "Venue not set"}
@@ -76,7 +94,7 @@ function LiveCard({ match }) {
             Watch Live
           </Link>
           <Link href={`/live-scoring?code=${match.code}`} className="cricket-gradient flex-1 rounded-xl py-2.5 text-center text-sm font-semibold text-white transition-all hover:scale-[1.02]">
-            Score Match
+            {isBreak ? "Resume Scoring" : "Score Match"}
           </Link>
         </div>
       </div>
@@ -90,10 +108,15 @@ function UpcomingCard({ match }) {
     <article className="overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-lg text-primary">event</span>
+          <Icon name="event" className="" />
           <span className="text-sm font-semibold text-foreground">{formatDate(match.date)}</span>
         </div>
-        <span className="font-mono text-xs text-foreground-muted">{match.code}</span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-primary-fixed px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+            {matchFormatLabel(match)}
+          </span>
+          <span className="font-mono text-xs text-foreground-muted">{match.code}</span>
+        </div>
       </div>
       <div className="p-4">
         <div className="mb-3 flex items-center justify-between">
@@ -109,7 +132,7 @@ function UpcomingCard({ match }) {
         </div>
         {(match.venue || match.overs_limit) && (
           <p className="mb-3 flex items-center gap-1 text-xs text-foreground-muted">
-            <span className="material-symbols-outlined text-sm">location_on</span>
+            <Icon name="location_on" className="" />
             {[match.venue, match.overs_limit ? `${match.overs_limit} overs` : null].filter(Boolean).join(" · ")}
           </p>
         )}
@@ -132,12 +155,15 @@ function CompletedCard({ match }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm">
       <div className="p-4">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2 flex items-center justify-between gap-2">
           <span className="text-xs text-foreground-muted">{formatDate(match.date)}{match.overs_limit ? ` · ${match.overs_limit} overs` : ""}</span>
           <div className="flex items-center gap-2">
             {abandoned && (
               <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-bold text-foreground-muted">Abandoned</span>
             )}
+            <span className="rounded-full bg-primary-fixed px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+              {matchFormatLabel(match)}
+            </span>
             <span className="font-mono text-xs text-foreground-muted">{match.code}</span>
           </div>
         </div>
@@ -165,16 +191,19 @@ function CompletedCard({ match }) {
 
 function EmptyState({ tab }) {
   const cfg = {
+    all:       { icon: "sports_cricket", text: "No matches found." },
     live:      { icon: "sports_cricket", text: "No live matches right now." },
+    innings_break: { icon: "pause_circle", text: "No matches are currently in innings break." },
     upcoming:  { icon: "event",          text: "No upcoming matches scheduled." },
     completed: { icon: "check_circle",   text: "No completed matches yet." },
+    abandoned: { icon: "cancel",         text: "No abandoned matches." },
   };
-  const { icon, text } = cfg[tab];
+  const { icon, text } = cfg[tab] ?? cfg.all;
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-outline-variant bg-white py-12 text-center">
-      <span className="material-symbols-outlined text-4xl text-outline">{icon}</span>
+      <Icon name="{icon}" className="" />
       <p className="text-sm font-semibold text-foreground-muted">{text}</p>
-      {tab !== "completed" && (
+      {tab !== "completed" && tab !== "abandoned" && (
         <Link href="/create-match" className="cricket-gradient rounded-xl px-5 py-2.5 text-sm font-semibold text-white">
           Create a Match
         </Link>
@@ -187,7 +216,7 @@ function EmptyState({ tab }) {
 
 export default function MyMatchesPage() {
   const { token } = useUser();
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("all");
   const [search,    setSearch]    = useState("");
   const [matches,   setMatches]   = useState(null);
   const [loading,   setLoading]   = useState(true);
@@ -201,7 +230,6 @@ export default function MyMatchesPage() {
         const seen = new Set();
         const deduped = all.filter((m) => { if (seen.has(m.code)) return false; seen.add(m.code); return true; });
         setMatches(deduped);
-        if (deduped.some((m) => m.status === "live")) setActiveTab("live");
       })
       .catch((err) => setError(err?.data?.message || "Failed to load matches."))
       .finally(() => setLoading(false));
@@ -218,16 +246,29 @@ export default function MyMatchesPage() {
   }, [matches, search]);
 
   const live      = filtered.filter((m) => m.status === "live");
+  const breakList = filtered.filter((m) => m.status === "innings_break");
   const upcoming  = filtered.filter((m) => m.status === "upcoming");
   const completed = filtered.filter((m) => m.status === "completed" || m.status === "abandoned");
 
   const tabs = [
+    { id: "all",      label: `All (${filtered.length})`,        icon: "apps" },
     { id: "live",      label: `Live (${live.length})`,           dot: true },
+    { id: "innings_break", label: `Innings Break (${breakList.length})`, icon: "pause_circle" },
     { id: "upcoming",  label: `Upcoming (${upcoming.length})`,   icon: "schedule" },
     { id: "completed", label: `Completed (${completed.length})`, icon: "check_circle" },
+    { id: "abandoned", label: `Abandoned (${filtered.filter((m) => m.status === "abandoned").length})`, icon: "cancel" },
   ];
 
-  const activeList = { live, upcoming, completed }[activeTab] ?? [];
+  const abandoned = filtered.filter((m) => m.status === "abandoned");
+  const allStatusGroups = {
+    all: filtered,
+    live,
+    innings_break: breakList,
+    upcoming,
+    completed,
+    abandoned,
+  };
+  const activeList = allStatusGroups[activeTab] ?? [];
 
   return (
     <AppShell
@@ -235,7 +276,7 @@ export default function MyMatchesPage() {
       subtitle="All matches you've created or played in"
       action={
         <Link href="/create-match" className="cricket-gradient inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:scale-105 active:scale-95">
-          <span className="material-symbols-outlined text-lg">add</span>
+          <Icon name="add" className="" />
           New Match
         </Link>
       }
@@ -244,7 +285,7 @@ export default function MyMatchesPage() {
         {/* Search + Filter */}
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">search</span>
+            <Icon name="search" className="" />
             <input
               type="text"
               value={search}
@@ -254,7 +295,7 @@ export default function MyMatchesPage() {
             />
           </div>
           <button className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant px-4 py-2.5 text-sm font-semibold text-foreground-muted transition-colors hover:bg-surface-container">
-            <span className="material-symbols-outlined text-lg">tune</span>
+            <Icon name="tune" className="" />
             Filter
           </button>
         </div>
@@ -273,7 +314,7 @@ export default function MyMatchesPage() {
             >
               {tab.dot
                 ? <span className={`h-2 w-2 rounded-full ${activeTab === tab.id ? "bg-white" : "bg-tertiary live-dot"}`} />
-                : <span className="material-symbols-outlined text-base">{tab.icon}</span>
+                : <Icon name="{tab.icon}" className="" />
               }
               {tab.label}
             </button>
@@ -291,13 +332,21 @@ export default function MyMatchesPage() {
           <div className="space-y-4">
             {activeList.length === 0 && <EmptyState tab={activeTab} />}
 
-            {activeTab === "live"      && live.map((m)      => <LiveCard      key={m.code} match={m} />)}
+            {activeTab === "all" && filtered.map((m) => {
+              if (m.status === "live") return <LiveCard key={m.code} match={m} status="live" />;
+              if (m.status === "innings_break") return <LiveCard key={m.code} match={m} status="innings_break" />;
+              if (m.status === "upcoming") return <UpcomingCard key={m.code} match={m} />;
+              return <CompletedCard key={m.code} match={m} />;
+            })}
+            {activeTab === "live"      && live.map((m)      => <LiveCard      key={m.code} match={m} status="live" />)}
+            {activeTab === "innings_break" && breakList.map((m) => <LiveCard key={m.code} match={m} status="innings_break" />)}
             {activeTab === "upcoming"  && upcoming.map((m)  => <UpcomingCard  key={m.code} match={m} />)}
             {activeTab === "completed" && completed.map((m) => <CompletedCard key={m.code} match={m} />)}
+            {activeTab === "abandoned" && abandoned.map((m) => <CompletedCard key={m.code} match={m} />)}
 
             {activeTab === "upcoming" && upcoming.length > 0 && (
               <div className="rounded-2xl border-2 border-dashed border-outline-variant bg-white p-6 text-center">
-                <span className="material-symbols-outlined mb-2 text-3xl text-outline">add_circle</span>
+                <Icon name="add_circle" className="" />
                 <p className="text-sm font-semibold text-foreground-muted">Schedule another match</p>
                 <Link href="/create-match" className="mt-1 block text-xs font-semibold text-primary hover:underline">
                   Create Match →

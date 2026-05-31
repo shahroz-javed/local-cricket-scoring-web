@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageSection } from "@/components/ui/page-section";
 import { useUser } from "@/lib/user-context";
+import { Icon } from "@/components/ui/icon";
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -17,7 +18,7 @@ export default function DashboardPage() {
           href="/create-match"
           className="cricket-gradient inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
         >
-          <span className="material-symbols-outlined text-lg">add</span>
+          <Icon name="add" className="text-lg" />
           New Match
         </Link>
       }
@@ -27,7 +28,7 @@ export default function DashboardPage() {
           <article className="rounded-2xl border border-outline-variant/30 bg-surface p-6 shadow-sm">
             <div className="mb-4 flex items-start justify-between">
               <div className="rounded-xl bg-primary-fixed p-2.5">
-                <span className="material-symbols-outlined text-xl text-primary">verified_user</span>
+                <Icon name="verified_user" className="text-xl text-primary" />
               </div>
               <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-secondary">Verified</span>
             </div>
@@ -38,7 +39,7 @@ export default function DashboardPage() {
           <article className="rounded-2xl border border-outline-variant/30 bg-surface p-6 shadow-sm">
             <div className="mb-4">
               <div className="rounded-xl bg-green-100 p-2.5 inline-flex">
-                <span className="material-symbols-outlined material-symbols-filled text-xl text-secondary">mail</span>
+                <Icon name="mail" className="text-xl text-secondary" />
               </div>
             </div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-foreground-muted">Email</p>
@@ -48,7 +49,7 @@ export default function DashboardPage() {
           <article className="rounded-2xl border border-outline-variant/30 bg-surface p-6 shadow-sm">
             <div className="mb-4">
               <div className="inline-flex rounded-xl bg-primary-fixed p-2.5">
-                <span className="material-symbols-outlined text-xl text-primary">phone</span>
+                <Icon name="phone" className="text-xl text-primary" />
               </div>
             </div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-foreground-muted">Phone</p>
@@ -58,7 +59,7 @@ export default function DashboardPage() {
           <article className="rounded-2xl border border-outline-variant/30 bg-surface p-6 shadow-sm">
             <div className="mb-4">
               <div className="rounded-xl bg-green-100 p-2.5 inline-flex">
-                <span className="material-symbols-outlined material-symbols-filled text-xl text-secondary">vpn_key</span>
+                <Icon name="vpn_key" className="text-xl text-secondary" />
               </div>
             </div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-foreground-muted">Session</p>
@@ -69,15 +70,15 @@ export default function DashboardPage() {
         <PageSection title="Quick Actions">
           <div className="flex flex-wrap gap-3">
             <Link href="/create-match" className="cricket-gradient inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white">
-              <span className="material-symbols-outlined">add_circle</span>
+              <Icon name="add_circle" className="" />
               Create Match
             </Link>
             <Link href="/team-management" className="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-6 py-3 text-sm font-semibold border border-outline-variant hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined">group_add</span>
+              <Icon name="group_add" className="" />
               Manage Teams
             </Link>
             <Link href="/my-matches" className="inline-flex items-center gap-2 rounded-xl border border-primary-fixed px-6 py-3 text-sm font-semibold text-primary hover:bg-primary-fixed transition-colors">
-              <span className="material-symbols-outlined">sports_cricket</span>
+              <Icon name="sports_cricket" className="" />
               View My Matches
             </Link>
           </div>

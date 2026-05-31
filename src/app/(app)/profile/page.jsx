@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { apiRequest } from "@/lib/api";
 import { setAuthSession } from "@/lib/auth";
 import { useUser } from "@/lib/user-context";
+import { Icon } from "@/components/ui/icon";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -111,7 +112,7 @@ function AvatarUpload({ user, token, onUpdated }) {
             <Spinner />
           ) : (
             <>
-              <span className="material-symbols-outlined text-white text-2xl">photo_camera</span>
+              <Icon name="photo_camera" className="text-2xl text-white" />
               <span className="text-white text-xs font-semibold mt-1">Change</span>
             </>
           )}

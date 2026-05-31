@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { Icon } from "@/components/ui/icon";
 import { apiRequest } from "@/lib/api";
 import { useUser } from "@/lib/user-context";
 
@@ -15,6 +16,7 @@ const MATCH_TYPES = [
   { id: "T20",    label: "T20",    overs: 20 },
   { id: "ODI",    label: "ODI",    overs: 50 },
   { id: "T10",    label: "T10",    overs: 10 },
+  { id: "single_wicket", label: "Single Wicket", overs: null },
   { id: "Custom", label: "Custom", overs: null },
 ];
 
@@ -39,7 +41,7 @@ function StepDot({ n, current }) {
       :          "border-2 border-outline-variant bg-white text-outline"}`}
     >
       {done
-        ? <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+        ? <Icon name="check" className="text-base" />
         : n}
     </div>
   );
@@ -153,7 +155,7 @@ function StepDetails({ data, onChange, errors }) {
           ))}
         </div>
         <div className="relative mt-2">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">timer</span>
+          <Icon name="timer" className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" />
           <input
             type="number"
             min={1}
@@ -172,7 +174,7 @@ function StepDetails({ data, onChange, errors }) {
         <div className="space-y-1.5">
           <label className="text-sm font-semibold text-foreground">Date</label>
           <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">calendar_today</span>
+            <Icon name="calendar_today" className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" />
             <input
               type="date"
               value={data.date}
@@ -190,7 +192,7 @@ function StepDetails({ data, onChange, errors }) {
             Start Time <span className="font-normal text-foreground-muted">(optional)</span>
           </label>
           <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">schedule</span>
+            <Icon name="schedule" className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" />
             <input
               type="time"
               value={data.time}
@@ -207,7 +209,7 @@ function StepDetails({ data, onChange, errors }) {
           Venue <span className="font-normal text-foreground-muted">(optional)</span>
         </label>
         <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">location_on</span>
+          <Icon name="location_on" className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" />
           <input
             type="text"
             value={data.venue}
@@ -225,8 +227,13 @@ function StepDetails({ data, onChange, errors }) {
 // ─── Team lookup card ─────────────────────────────────────────────────────────
 
 function TeamLookup({ role, token, value, onSelect, otherTeamCode, error, setError }) {
-  const [input, setInput]     = useState(value?.code || "");
+  const TEAM_PREFIX = "TEAM-";
+  const [input, setInput]     = useState(value?.code || TEAM_PREFIX);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setInput(value?.code || TEAM_PREFIX);
+  }, [value]);
 
   async function lookup() {
     const code = input.trim().toUpperCase();
@@ -251,20 +258,31 @@ function TeamLookup({ role, token, value, onSelect, otherTeamCode, error, setErr
     if (e.key === "Enter") { e.preventDefault(); lookup(); }
   }
 
+  function handleInputChange(nextValue) {
+    const upper = nextValue.toUpperCase();
+    const suffix = upper.startsWith(TEAM_PREFIX)
+      ? upper.slice(TEAM_PREFIX.length)
+      : upper;
+    const cleaned = suffix.replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    setInput(`${TEAM_PREFIX}${cleaned}`);
+    onSelect(null);
+    setError("");
+  }
+
   const memberCount = value?.members?.length ?? 0;
-  const lowSquad    = value && memberCount < 11;
+  const lowSquad    = value && memberCount < 2;
 
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">search</span>
+          <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" />
           <input
             type="text"
             value={input}
-            onChange={(e) => { setInput(e.target.value.toUpperCase()); onSelect(null); setError(""); }}
+            onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="TEAM-XXXXXX"
+            placeholder="TEAM-"
             maxLength={11}
             className="w-full rounded-xl border border-outline-variant bg-surface-container-low py-3 pl-10 pr-4 font-mono text-sm tracking-widest outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
           />
@@ -275,7 +293,7 @@ function TeamLookup({ role, token, value, onSelect, otherTeamCode, error, setErr
           disabled={loading || input.length < 6}
           className="cricket-gradient flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {loading ? <Spinner /> : <span className="material-symbols-outlined text-lg">search</span>}
+          {loading ? <Spinner /> : <Icon name="search" className="text-lg" />}
           Find
         </button>
       </div>
@@ -299,18 +317,18 @@ function TeamLookup({ role, token, value, onSelect, otherTeamCode, error, setErr
             </div>
             <button
               type="button"
-              onClick={() => { onSelect(null); setInput(""); setError(""); }}
+              onClick={() => { onSelect(null); setInput(TEAM_PREFIX); setError(""); }}
               className="rounded-lg p-1.5 text-foreground-muted hover:bg-white/60 hover:text-error"
               title="Remove"
             >
-              <span className="material-symbols-outlined text-lg">close</span>
+              <Icon name="close" className="text-lg" />
             </button>
           </div>
 
           {lowSquad && (
             <div className="flex items-center gap-2 border-t border-primary/20 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-700">
-              <span className="material-symbols-outlined text-base">warning</span>
-              This team has fewer than 11 players. You can still create the match, but you'll need to add players before it can start.
+              <Icon name="warning" className="text-base" />
+              This team has fewer than 2 players. You can still create the match, but you'll need enough active players before it can start.
             </div>
           )}
 
@@ -425,7 +443,7 @@ function StepToss({ data, onChange, teamA, teamB }) {
       </div>
 
       <div className="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
-        <span className="material-symbols-outlined text-lg text-primary">info</span>
+        <Icon name="info" className="text-lg text-primary" />
         <p className="text-xs text-foreground-muted">
           Toss can be skipped now and recorded later from the match page before you hit <strong>Start Match</strong>.
         </p>
@@ -475,14 +493,7 @@ function StepToss({ data, onChange, teamA, teamB }) {
                     : "border-outline-variant bg-white hover:border-primary"
                 }`}
               >
-                <span
-                  className={`material-symbols-outlined mb-2 text-4xl ${
-                    decision === opt.id ? "text-primary" : "text-foreground-muted"
-                  }`}
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  {opt.icon}
-                </span>
+                <Icon name={opt.icon} className={`mb-2 text-4xl ${decision === opt.id ? "text-primary" : "text-foreground-muted"}`} />
                 <p className="font-display text-base font-bold text-foreground">{opt.label}</p>
                 <p className="text-xs text-foreground-muted">{opt.sub}</p>
               </button>
@@ -496,12 +507,12 @@ function StepToss({ data, onChange, teamA, teamB }) {
         <div className="rounded-2xl border border-secondary/30 bg-green-50 p-4 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">Innings Order</p>
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-lg text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_cricket</span>
+            <Icon name="sports_cricket" className="text-lg text-primary" />
             <span className="text-sm font-semibold text-foreground">{battingFirst.name}</span>
             <span className="text-xs rounded-full bg-primary-fixed px-2 py-0.5 text-primary font-semibold">Batting 1st</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-lg text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_baseball</span>
+            <Icon name="sports_baseball" className="text-lg text-secondary" />
             <span className="text-sm font-semibold text-foreground">{bowlingFirst.name}</span>
             <span className="text-xs rounded-full bg-green-100 px-2 py-0.5 text-secondary font-semibold">Bowling 1st</span>
           </div>
@@ -575,7 +586,7 @@ function StepConfirm({ details, teamA, teamB, toss, matchCode }) {
           ].map(({ icon, label, value }) => (
             <div key={label} className="flex items-center justify-between px-5 py-3">
               <span className="flex items-center gap-2 text-sm text-foreground-muted">
-                <span className="material-symbols-outlined text-lg text-outline">{icon}</span>
+                <Icon name={icon} className="text-lg text-outline" />
                 {label}
               </span>
               <span className="text-sm font-semibold text-foreground">{value}</span>
@@ -586,7 +597,7 @@ function StepConfirm({ details, teamA, teamB, toss, matchCode }) {
 
       {/* Public code note */}
       <div className="flex items-start gap-3 rounded-xl border border-outline-variant bg-surface-container-low p-4">
-        <span className="material-symbols-outlined mt-0.5 text-xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>share</span>
+        <Icon name="share" className="mt-0.5 text-xl text-primary" />
         <div>
           <p className="text-sm font-semibold text-foreground">Anyone can watch via match code</p>
           <p className="mt-0.5 text-xs text-foreground-muted">
@@ -698,6 +709,7 @@ export default function CreateMatchPage() {
           venue:       details.venue.trim() || null,
           date:        dateVal,
           overs_limit: details.overs,
+          match_type:  details.match_type,
         },
       });
 
@@ -746,7 +758,7 @@ export default function CreateMatchPage() {
           href="/my-matches"
           className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-2 text-sm font-semibold text-foreground-muted hover:bg-surface-container transition-colors"
         >
-          <span className="material-symbols-outlined text-lg">close</span>
+          <Icon name="close" className="text-lg" />
           Cancel
         </Link>
       }

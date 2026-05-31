@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { apiRequest } from "@/lib/api";
 import { useUser } from "@/lib/user-context";
+import { Icon } from "@/components/ui/icon";
 
 // ─── constants ───────────────────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ function Modal({ title, onClose, children }) {
         <div className="flex items-center justify-between border-b border-outline-variant px-6 py-4">
           <h3 className="font-display text-base font-bold text-foreground">{title}</h3>
           <button onClick={onClose} className="rounded-lg p-1 text-outline transition-colors hover:bg-surface-container hover:text-foreground">
-            <span className="material-symbols-outlined">close</span>
+            <Icon name="close" className="" />
           </button>
         </div>
         <div className="max-h-[80vh] overflow-y-auto px-6 py-5">{children}</div>
@@ -451,7 +452,7 @@ function JoinRequestInbox({ team, token, onMemberAdded }) {
                 disabled={acting === req.id}
                 className="flex items-center gap-1 rounded-xl bg-secondary px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                {acting === req.id ? <Spinner /> : <span className="material-symbols-outlined text-base">check</span>}
+                {acting === req.id ? <Spinner /> : <Icon name="check" className="" />}
                 Approve
               </button>
               <button
@@ -459,7 +460,7 @@ function JoinRequestInbox({ team, token, onMemberAdded }) {
                 disabled={acting === req.id}
                 className="flex items-center gap-1 rounded-xl border border-outline-variant px-3 py-2 text-xs font-semibold text-foreground-muted transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-60"
               >
-                <span className="material-symbols-outlined text-base">close</span>
+                <Icon name="close" className="" />
                 Reject
               </button>
             </div>
@@ -540,7 +541,7 @@ function TeamDetail({ team, token, onTeamUpdated }) {
                   onClick={copyCode}
                   className="flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-xs text-white transition-colors hover:bg-white/20"
                 >
-                  <span className="material-symbols-outlined text-sm">{copied ? "check" : "content_copy"}</span>
+                  <Icon name={copied ? "check" : "content_copy"} className="" />
                   {copied ? "Copied" : "Copy"}
                 </button>
               </div>
@@ -550,7 +551,7 @@ function TeamDetail({ team, token, onTeamUpdated }) {
             onClick={() => setModal("editTeam")}
             className="flex items-center gap-1 rounded-xl bg-white/10 px-3 py-2 text-sm text-white transition-colors hover:bg-white/20"
           >
-            <span className="material-symbols-outlined text-lg">edit</span> Rename
+            <Icon name="edit" className="" /> Rename
           </button>
         </div>
 
@@ -577,7 +578,7 @@ function TeamDetail({ team, token, onTeamUpdated }) {
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-1.5 px-5 py-3.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${tab === t.key ? "border-primary text-primary" : "border-transparent text-foreground-muted hover:text-foreground"}`}
           >
-            <span className="material-symbols-outlined text-lg">{t.icon}</span>
+            <Icon name={t.icon} className="" />
             {t.label}
           </button>
         ))}
@@ -594,7 +595,7 @@ function TeamDetail({ team, token, onTeamUpdated }) {
             onClick={() => setModal("addMember")}
             className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
           >
-            <span className="material-symbols-outlined text-lg">person_add</span> Add Guest Player
+            <Icon name="person_add" className="" /> Add Guest Player
           </button>
         </div>
 
@@ -704,7 +705,7 @@ function MemberRow({ member, index, removing, onEdit, onRemove }) {
           className="rounded-lg p-1.5 text-outline transition-colors hover:bg-surface-container hover:text-foreground"
           title="Edit player"
         >
-          <span className="material-symbols-outlined text-lg">edit</span>
+          <Icon name="edit" className="" />
         </button>
         {!isCaptain ? (
           <button
@@ -713,7 +714,7 @@ function MemberRow({ member, index, removing, onEdit, onRemove }) {
             className="rounded-lg p-1.5 text-outline transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
             title="Remove player"
           >
-            {removing ? <Spinner /> : <span className="material-symbols-outlined text-lg">person_remove</span>}
+            {removing ? <Spinner /> : <Icon name="person_remove" className="" />}
           </button>
         ) : null}
       </div>
@@ -777,7 +778,7 @@ export default function TeamManagementPage() {
                 className="group flex min-h-44 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-outline-variant p-8 transition-all hover:border-primary hover:bg-surface-container-low"
               >
                 <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-container transition-colors group-hover:bg-primary-fixed">
-                  <span className="material-symbols-outlined text-2xl text-outline transition-colors group-hover:text-primary">add_circle</span>
+                  <Icon name="add_circle" className="" />
                 </div>
                 <p className="text-sm font-semibold text-foreground-muted transition-colors group-hover:text-primary">Create New Team</p>
                 <p className="mt-1 text-center text-xs text-outline">Start a squad and invite your players</p>

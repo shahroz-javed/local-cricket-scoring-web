@@ -27,7 +27,6 @@ export function PublicShell({ children, badge }) {
             </Link>
             <a href="/#features"    className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">Features</a>
             <a href="/#how-it-works" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">How It Works</a>
-            <a href="/#roadmap"     className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">Roadmap</a>
           </div>
 
           {/* Right actions */}

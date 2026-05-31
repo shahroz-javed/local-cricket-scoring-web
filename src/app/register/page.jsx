@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { apiRequest } from "@/lib/api";
+import { Icon } from "@/components/ui/icon";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -80,14 +81,14 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-foreground">First Name</label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                <Icon name="person" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
                 <input type="text" placeholder="Rohit" value={form.firstName} onChange={(event) => updateField("firstName", event.target.value)} className="w-full rounded-xl border border-outline-variant bg-surface-low py-3 pl-10 pr-3 text-sm text-foreground placeholder-outline transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary" required />
               </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-foreground">Last Name</label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                <Icon name="person" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
                 <input type="text" placeholder="Sharma" value={form.lastName} onChange={(event) => updateField("lastName", event.target.value)} className="w-full rounded-xl border border-outline-variant bg-surface-low py-3 pl-10 pr-3 text-sm text-foreground placeholder-outline transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
             </div>
@@ -96,7 +97,7 @@ export default function RegisterPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-foreground">Email Address</label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">mail</span>
+              <Icon name="mail" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
               <input type="email" placeholder="name@example.com" value={form.email} onChange={(event) => updateField("email", event.target.value)} className="w-full rounded-xl border border-outline-variant bg-surface-low py-3 pl-10 pr-3 text-sm text-foreground placeholder-outline transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary" required />
             </div>
           </div>
@@ -104,7 +105,7 @@ export default function RegisterPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-foreground">Phone Number</label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">phone</span>
+              <Icon name="phone" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
               <input type="tel" placeholder="+92 300 1234567" value={form.phone} onChange={(event) => updateField("phone", event.target.value)} className="w-full rounded-xl border border-outline-variant bg-surface-low py-3 pl-10 pr-3 text-sm text-foreground placeholder-outline transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
           </div>
@@ -113,14 +114,14 @@ export default function RegisterPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-foreground">Password</label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">lock</span>
+                <Icon name="lock" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
                 <input type="password" placeholder="Minimum 8 characters" value={form.password} onChange={(event) => updateField("password", event.target.value)} className="w-full rounded-xl border border-outline-variant bg-surface-low py-3 pl-10 pr-3 text-sm text-foreground placeholder-outline transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary" required />
               </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-foreground">Confirm</label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">lock_reset</span>
+                <Icon name="lock_reset" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
                 <input type="password" placeholder="Repeat password" value={form.password_confirmation} onChange={(event) => updateField("password_confirmation", event.target.value)} className="w-full rounded-xl border border-outline-variant bg-surface-low py-3 pl-10 pr-3 text-sm text-foreground placeholder-outline transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary" required />
               </div>
             </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api";
 import { PublicShell } from "@/components/layout/public-shell";
+import { Icon } from "@/components/ui/icon";
 
 const POLL_MS = 15000;
 
@@ -18,7 +19,7 @@ function Spinner() {
       <div className="relative flex h-14 w-14 items-center justify-center">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-10" />
         <span className="absolute h-14 w-14 animate-spin rounded-full border-4 border-transparent border-t-primary border-r-primary/40" />
-        <span className="material-symbols-outlined text-xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>sports_cricket</span>
+        <Icon name="sports_cricket" className="text-xl text-primary" />
       </div>
       <p className="text-sm text-foreground-muted">Loading live matches…</p>
     </div>
@@ -98,7 +99,7 @@ function LiveMatchCard({ match }) {
               </span>
               {venue && (
                 <span className="hidden sm:inline truncate max-w-[120px]">
-                  <span className="material-symbols-outlined text-xs align-text-bottom">location_on</span>
+                  <Icon name="location_on" className="" />
                   {venue}
                 </span>
               )}
@@ -155,7 +156,7 @@ export default function LiveMatchesPage() {
 
       {!loading && matches?.length === 0 && (
         <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-outline-variant bg-surface py-16 text-center">
-          <span className="material-symbols-outlined text-5xl text-outline" style={{ fontVariationSettings: "'FILL' 1" }}>sports_cricket</span>
+          <Icon name="sports_cricket" className="text-5xl text-outline" />
           <div>
             <p className="text-base font-bold text-foreground">No live matches right now</p>
             <p className="text-sm text-foreground-muted mt-1">Check back soon — matches appear here the moment they start.</p>
