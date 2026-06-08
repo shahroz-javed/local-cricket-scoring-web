@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PwaInstallBanner } from "@/components/ui/pwa-install-banner";
 
 export function PublicShell({ children, badge }) {
   return (
@@ -25,8 +26,12 @@ export function PublicShell({ children, badge }) {
               </span>
               Live Matches
             </Link>
+            <Link href="/tournaments/live" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">
+              Tournaments
+            </Link>
             <a href="/#features"    className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">Features</a>
             <a href="/#how-it-works" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">How It Works</a>
+            <Link href="/blog" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">Blog</Link>
           </div>
 
           {/* Right actions */}
@@ -52,13 +57,17 @@ export function PublicShell({ children, badge }) {
             <span className="text-xs text-foreground-muted ml-2">© 2026 CricketApp</span>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="text-foreground-muted hover:text-primary transition-colors text-xs">Privacy</a>
-            <a href="#" className="text-foreground-muted hover:text-primary transition-colors text-xs">Terms</a>
-            <a href="#" className="text-foreground-muted hover:text-primary transition-colors text-xs">Support</a>
+            <Link href="/live-matches" className="text-foreground-muted hover:text-primary transition-colors text-xs">Live Matches</Link>
+            <Link href="/tournaments/live" className="text-foreground-muted hover:text-primary transition-colors text-xs">Tournaments</Link>
+            <Link href="/blog"    className="text-foreground-muted hover:text-primary transition-colors text-xs">Blog</Link>
+            <Link href="/privacy" className="text-foreground-muted hover:text-primary transition-colors text-xs">Privacy</Link>
+            <Link href="/terms"   className="text-foreground-muted hover:text-primary transition-colors text-xs">Terms</Link>
+            <Link href="/support" className="text-foreground-muted hover:text-primary transition-colors text-xs">Support</Link>
           </div>
         </div>
       </footer>
 
+      <PwaInstallBanner />
     </div>
   );
 }

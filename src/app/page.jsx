@@ -1,5 +1,16 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
+import { fetchPageSeo, buildMetadata } from "@/lib/page-seo";
+
+export async function generateMetadata() {
+  const seo = await fetchPageSeo("home");
+  return buildMetadata({
+    seo,
+    fallbackTitle: "CricketApp — Live Cricket Scoring",
+    fallbackDescription: "Score and follow live cricket matches from your phone. Real-time scorecards, push notifications and DLS support.",
+    path: "/",
+  });
+}
 
 export default function Home() {
   return (
@@ -21,7 +32,7 @@ export default function Home() {
             </Link>
             <a href="#features" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">Features</a>
             <a href="#how-it-works" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">How It Works</a>
-            
+            <Link href="/blog" className="text-foreground-muted hover:text-primary transition-colors text-sm font-medium">Blog</Link>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-foreground font-semibold text-sm px-4 py-2 rounded-xl hover:bg-surface-mid transition-colors">Sign In</Link>
@@ -194,9 +205,9 @@ export default function Home() {
             <span className="text-xs text-foreground-muted ml-2">© 2026 CricketApp</span>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="text-foreground-muted hover:text-primary transition-colors text-xs">Privacy</a>
-            <a href="#" className="text-foreground-muted hover:text-primary transition-colors text-xs">Terms</a>
-            <a href="#" className="text-foreground-muted hover:text-primary transition-colors text-xs">Support</a>
+            <Link href="/privacy" className="text-foreground-muted hover:text-primary transition-colors text-xs">Privacy</Link>
+            <Link href="/terms"   className="text-foreground-muted hover:text-primary transition-colors text-xs">Terms</Link>
+            <Link href="/support" className="text-foreground-muted hover:text-primary transition-colors text-xs">Support</Link>
           </div>
         </div>
       </footer>

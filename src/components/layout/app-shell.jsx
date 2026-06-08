@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { navItems } from "./nav-config";
 import { useUser } from "@/lib/user-context";
 import { Icon } from "@/components/ui/icon";
+import { PwaInstallBanner } from "@/components/ui/pwa-install-banner";
 
 function isItemActive(pathname, href) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -192,6 +193,7 @@ export function AppShell({ title, subtitle, action, children }) {
           );
         })}
       </nav>
+      <PwaInstallBanner />
     </div>
   );
 }

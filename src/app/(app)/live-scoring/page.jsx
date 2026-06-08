@@ -10,11 +10,11 @@ import { useUser } from "@/lib/user-context";
 import { getEcho } from "@/lib/echo";
 import { Icon } from "@/components/ui/icon";
 
-// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Constants â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 const SCORER_TTL    = 180;  // seconds (3 min inactivity)
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function uuid() {
   return crypto.randomUUID
@@ -73,7 +73,7 @@ function ballLabel(delivery) {
   return String(rb);
 }
 
-// â”€â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Sub-components â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function PageSpinner() {
   return (
@@ -291,6 +291,360 @@ function PlayerSelector({ label, players, value, onChange, disabled }) {
   );
 }
 
+// ─── Wagon Wheel shared geometry ─────────────────────────────────────────────
+// Batter sits at bottom-center (CY + BATTER_Y_OFFSET). Angle 0° = straight up.
+// All three wagon wheel components (Picker, match display, career) share these.
+
+function degToRad(d) { return (d * Math.PI) / 180; }
+
+function polarToXY(cx, cy, rx, ry, angleDeg) {
+  const rad = degToRad(angleDeg - 90);
+  return [cx + rx * Math.cos(rad), cy + ry * Math.sin(rad)];
+}
+
+// Annular sector path — ring between innerR and outerR, not a pie slice from center
+function annularSectorPath(cx, cy, rx, ry, innerFrac, startDeg, endDeg) {
+  const oRx = rx, oRy = ry;
+  const iRx = rx * innerFrac, iRy = ry * innerFrac;
+  const s = startDeg, e = endDeg;
+  const [ox1, oy1] = polarToXY(cx, cy, oRx, oRy, s);
+  const [ox2, oy2] = polarToXY(cx, cy, oRx, oRy, e);
+  const [ix1, iy1] = polarToXY(cx, cy, iRx, iRy, s);
+  const [ix2, iy2] = polarToXY(cx, cy, iRx, iRy, e);
+  const span = ((e - s) % 360 + 360) % 360;
+  const large = span > 180 ? 1 : 0;
+  return [
+    `M ${ox1} ${oy1}`,
+    `A ${oRx} ${oRy} 0 ${large} 1 ${ox2} ${oy2}`,
+    `L ${ix2} ${iy2}`,
+    `A ${iRx} ${iRy} 0 ${large} 0 ${ix1} ${iy1}`,
+    "Z",
+  ].join(" ");
+}
+
+function angleFromCenter(cx, cy, px, py) {
+  let deg = Math.atan2(py - cy, px - cx) * (180 / Math.PI) + 90;
+  if (deg < 0) deg += 360;
+  return deg;
+}
+
+// 9 balanced sectors clockwise from top. Leg side = left of screen (right-handed batter).
+const SECTOR_ANGLES = [
+  { id: "long_on",    start: 0,   end: 45  },
+  { id: "mid_wicket", start: 45,  end: 90  },
+  { id: "square_leg", start: 90,  end: 135 },
+  { id: "fine_leg",   start: 135, end: 180 },
+  { id: "third_man",  start: 180, end: 225 },
+  { id: "point",      start: 225, end: 270 },
+  { id: "cover",      start: 270, end: 315 },
+  { id: "mid_off",    start: 315, end: 337 },
+  { id: "long_off",   start: 337, end: 360 },
+];
+
+function hitZone(cx, cy, px, py) {
+  const angle = angleFromCenter(cx, cy, px, py);
+  for (const s of SECTOR_ANGLES) {
+    if (angle >= s.start && angle < s.end) return s.id;
+  }
+  return "long_off";
+}
+
+// Zone color groups: leg-side blue, off-side teal, straight amber, covers green
+const ZONE_META = {
+  fine_leg:   { label: "Fine Leg",   color: "#3b82f6" },
+  square_leg: { label: "Square Leg", color: "#2563eb" },
+  mid_wicket: { label: "Mid Wicket", color: "#16a34a" },
+  long_on:    { label: "Long On",    color: "#d97706" },
+  long_off:   { label: "Long Off",   color: "#b45309" },
+  mid_off:    { label: "Mid Off",    color: "#059669" },
+  cover:      { label: "Cover",      color: "#10b981" },
+  point:      { label: "Point",      color: "#0891b2" },
+  third_man:  { label: "Third Man",  color: "#0e7490" },
+};
+
+// Returns normalised (x, y) centroid for storage — 0=off/top, 1=leg/bottom
+function zoneCentroid(zoneId) {
+  const map = {
+    fine_leg:   [0.75, 0.92],
+    third_man:  [0.25, 0.92],
+    square_leg: [0.88, 0.65],
+    point:      [0.12, 0.65],
+    mid_wicket: [0.82, 0.38],
+    cover:      [0.18, 0.38],
+    long_on:    [0.65, 0.08],
+    long_off:   [0.35, 0.08],
+    mid_off:    [0.22, 0.25],
+  };
+  return map[zoneId] ?? [0.5, 0.5];
+}
+
+// Returns SVG [x, y] for the centroid of a zone at ~75% radius (mid-annulus)
+function zoneSVGCenter(cx, cy, rx, ry, zoneId) {
+  const s = SECTOR_ANGLES.find((z) => z.id === zoneId);
+  if (!s) return [cx, cy];
+  const midAngle = (s.start + s.end) / 2;
+  const r = 0.75; // 75% of radius = middle of annulus
+  return polarToXY(cx, cy, rx * r, ry * r, midAngle);
+}
+
+// Shared cricket field SVG base (no interaction, pure rendering)
+function CricketFieldBase({ cx, cy, rx, ry }) {
+  return (
+    <>
+      {/* Outfield */}
+      <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="#15803d" stroke="#14532d" strokeWidth="2" />
+      {/* Infield (lighter green) */}
+      <ellipse cx={cx} cy={cy} rx={rx * 0.52} ry={ry * 0.52} fill="#16a34a" />
+      {/* 30-yard circle */}
+      <ellipse cx={cx} cy={cy} rx={rx * 0.52} ry={ry * 0.52} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeDasharray="5 4" />
+      {/* Pitch */}
+      <rect x={cx - 9} y={cy - 52} width={18} height={104} rx="3"
+            fill="rgba(255,218,90,0.22)" stroke="rgba(255,218,90,0.5)" strokeWidth="1" />
+      {/* Bowling crease */}
+      <line x1={cx - 13} y1={cy - 40} x2={cx + 13} y2={cy - 40} stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" />
+      {/* Batting crease */}
+      <line x1={cx - 13} y1={cy + 40} x2={cx + 13} y2={cy + 40} stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" />
+      {/* Stumps at bowling end */}
+      {[-3, 0, 3].map((dx) => (
+        <line key={dx} x1={cx + dx} y1={cy - 40} x2={cx + dx} y2={cy - 52}
+              stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
+      ))}
+      {/* Stumps at batting end */}
+      {[-3, 0, 3].map((dx) => (
+        <line key={dx} x1={cx + dx} y1={cy + 40} x2={cx + dx} y2={cy + 52}
+              stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
+      ))}
+      {/* Compass labels */}
+      <text x={cx} y={12} textAnchor="middle" fill="rgba(255,255,255,0.38)" fontSize="8" fontWeight="600">STRAIGHT</text>
+      <text x={cx} y={ry * 2 - 4} textAnchor="middle" fill="rgba(255,255,255,0.38)" fontSize="8" fontWeight="600">FINE / 3RD MAN</text>
+      <text x={7} y={cy + 4} textAnchor="start" fill="rgba(255,255,255,0.38)" fontSize="8" fontWeight="600">LEG</text>
+      <text x={rx * 2 - 7} y={cy + 4} textAnchor="end" fill="rgba(255,255,255,0.38)" fontSize="8" fontWeight="600">OFF</text>
+    </>
+  );
+}
+
+// Batter icon at bottom of pitch — stick figure with bat
+function BatterIcon({ cx, cy }) {
+  const bx = cx, by = cy + 48; // below batting crease
+  return (
+    <g style={{ pointerEvents: "none" }}>
+      {/* Body */}
+      <line x1={bx} y1={by + 5} x2={bx} y2={by + 16} stroke="white" strokeWidth="2" strokeLinecap="round" />
+      {/* Head */}
+      <circle cx={bx} cy={by + 2} r="3.5" fill="white" />
+      {/* Arms — one up holding bat */}
+      <line x1={bx} y1={by + 8} x2={bx - 5} y2={by + 13} stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1={bx} y1={by + 8} x2={bx + 7} y2={by + 5} stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Bat */}
+      <line x1={bx + 7} y1={by + 5} x2={bx + 13} y2={by - 2} stroke="rgba(255,218,90,0.9)" strokeWidth="3" strokeLinecap="round" />
+      {/* Legs */}
+      <line x1={bx} y1={by + 16} x2={bx - 4} y2={by + 24} stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1={bx} y1={by + 16} x2={bx + 4} y2={by + 24} stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Label */}
+      <text x={bx} y={by + 31} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize="6.5" fontWeight="600">BATTER</text>
+    </g>
+  );
+}
+
+// CSS keyframe injected once for the sector pulse animation
+const WW_PULSE_CSS = `
+@keyframes ww-sector-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+.ww-sector-active {
+  animation: ww-sector-pulse 0.22s ease-out;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+`;
+
+function WagonWheelPicker({ runs, onConfirm, onSkip }) {
+  const [selected, setSelected] = useState(null);
+  const [pulseKey, setPulseKey] = useState(0); // increment to re-trigger animation
+  const [dragging, setDragging] = useState(false);
+  const svgRef = useRef(null);
+
+  const CX = 150, CY = 160, RX = 138, RY = 148;
+  const BATTER_CY = CY + 40; // actual batter strike position inside pitch
+
+  function getZoneFromEvent(e) {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    const px = ((e.clientX - rect.left) / rect.width) * 300;
+    const py = ((e.clientY - rect.top) / rect.height) * 340;
+    const dx = (px - CX) / RX;
+    const dy = (py - CY) / RY;
+    if (dx * dx + dy * dy > 1) return null;
+    return hitZone(CX, CY, px, py);
+  }
+
+  function selectZone(z) {
+    if (z && z !== selected) {
+      setSelected(z);
+      setPulseKey((k) => k + 1);
+    }
+  }
+
+  function onPointerDown(e) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragging(true);
+    selectZone(getZoneFromEvent(e));
+  }
+
+  function onPointerMove(e) {
+    if (!dragging) return;
+    selectZone(getZoneFromEvent(e));
+  }
+
+  function onPointerUp(_e) { setDragging(false); }
+
+  const runsColor = runs >= 6 ? "#4f46e5" : runs >= 4 ? "#16a34a" : "#0ea5e9";
+  const runsLabel = runs === 1 ? "1 run" : `${runs} runs`;
+
+  // Spoke endpoint: centroid of selected zone at 82% radius
+  const spokeTip = selected ? zoneSVGCenter(CX, CY, RX * 0.82, RY * 0.82, selected) : null;
+
+  return (
+    <>
+      <style>{WW_PULSE_CSS}</style>
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm">
+        <div className="w-full max-w-sm rounded-t-3xl sm:rounded-2xl bg-surface shadow-2xl overflow-hidden flex flex-col">
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground-muted">Where did it go?</p>
+              <p className="text-xl font-display font-bold text-foreground mt-0.5">
+                <span style={{ color: runsColor }}>{runsLabel}</span>
+              </p>
+            </div>
+            {selected ? (
+              <span
+                key={selected}
+                className="rounded-full px-3.5 py-1.5 text-xs font-bold text-white shadow-md transition-all"
+                style={{ background: ZONE_META[selected].color }}
+              >
+                {ZONE_META[selected].label}
+              </span>
+            ) : (
+              <span className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-foreground-muted bg-surface-container border border-outline-variant">
+                Tap field
+              </span>
+            )}
+          </div>
+
+          {/* SVG Field */}
+          <div className="px-4 pb-2 touch-none select-none">
+            <svg
+              ref={svgRef}
+              viewBox="0 0 300 340"
+              className="w-full"
+              style={{ touchAction: "none", cursor: "crosshair" }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+            >
+              {/* Base field */}
+              <CricketFieldBase cx={CX} cy={CY} rx={RX} ry={RY} />
+
+              {/* Annular zone sectors — outer ring only */}
+              {SECTOR_ANGLES.map((s) => {
+                const isSelected = selected === s.id;
+                const color = ZONE_META[s.id].color;
+                return (
+                  <path
+                    key={s.id}
+                    className={isSelected ? `ww-sector-active` : ""}
+                    // new key on pulseKey forces React to remount → restarts animation
+                    {...(isSelected ? { key: `${s.id}-${pulseKey}` } : { key: s.id })}
+                    d={annularSectorPath(CX, CY, RX, RY, 0.52, s.start, s.end)}
+                    fill={color}
+                    fillOpacity={isSelected ? 0.82 : 0.18}
+                    stroke={color}
+                    strokeOpacity={isSelected ? 0.9 : 0.35}
+                    strokeWidth={isSelected ? 1.5 : 0.8}
+                    style={{ transition: "fill-opacity 0.12s, stroke-opacity 0.12s" }}
+                  />
+                );
+              })}
+
+              {/* Zone labels in each sector */}
+              {SECTOR_ANGLES.map((s) => {
+                const [lx, ly] = zoneSVGCenter(CX, CY, RX, RY, s.id);
+                const isSelected = selected === s.id;
+                return (
+                  <text
+                    key={`lbl-${s.id}`}
+                    x={lx} y={ly + 3}
+                    textAnchor="middle"
+                    fill={isSelected ? "white" : "rgba(255,255,255,0.55)"}
+                    fontSize="7.5"
+                    fontWeight={isSelected ? "700" : "500"}
+                    style={{ pointerEvents: "none", transition: "fill 0.12s" }}
+                  >
+                    {ZONE_META[s.id].label}
+                  </text>
+                );
+              })}
+
+              {/* Spoke line from batter to selected zone */}
+              {selected && spokeTip && (
+                <line
+                  x1={CX} y1={BATTER_CY}
+                  x2={spokeTip[0]} y2={spokeTip[1]}
+                  stroke={ZONE_META[selected].color}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeOpacity="0.9"
+                  style={{ pointerEvents: "none" }}
+                />
+              )}
+
+              {/* Batter icon */}
+              <BatterIcon cx={CX} cy={CY} />
+
+              {/* Tap hint when nothing selected */}
+              {!selected && (
+                <text x={CX} y={CY + 5} textAnchor="middle"
+                      fill="rgba(255,255,255,0.45)" fontSize="9.5" fontWeight="500"
+                      style={{ pointerEvents: "none" }}>
+                  Tap or drag to pick a zone
+                </text>
+              )}
+            </svg>
+          </div>
+
+          {/* Always-visible action buttons */}
+          <div className="flex gap-2.5 px-5 pb-5 pt-1 shrink-0">
+            <button
+              onClick={onSkip}
+              className="flex-1 rounded-xl border border-outline-variant bg-surface-container py-3 text-sm font-semibold text-foreground-muted hover:bg-surface-container-high transition-colors"
+            >
+              Skip
+            </button>
+            <button
+              onClick={() => onConfirm(selected)}
+              className="rounded-xl py-3 text-sm font-bold text-white transition-all active:scale-95"
+              style={{
+                flex: 2,
+                background: selected
+                  ? `linear-gradient(135deg, ${ZONE_META[selected].color}, ${ZONE_META[selected].color}cc)`
+                  : "#6b7280",
+                boxShadow: selected ? `0 4px 14px ${ZONE_META[selected].color}55` : "none",
+              }}
+            >
+              {selected ? `✓  ${ZONE_META[selected].label}` : "Confirm without zone"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function WicketModal({ batsmenPlayers, fielders, isFreeDelivery, singleWicketMode, onConfirm, onCancel }) {
   const [type, setType]             = useState("bowled");
   const [dismissed, setDismissed]   = useState(null);
@@ -455,24 +809,411 @@ function ExtraRunsModal({ label, showFreeDeliveryToggle, freeDeliveryChecked, on
   );
 }
 
-function CompleteInningsModal({ inningsNum, target, onConfirm, onCancel }) {
+function CompleteInningsModal({ inningsNum, isSuperOver, target, onConfirm, onCancel }) {
+  let title, body;
+  if (isSuperOver) {
+    const leg = inningsNum % 2 === 1 ? "1st" : "2nd";
+    title = `Complete Super Over (${leg} leg)?`;
+    body  = inningsNum % 2 === 1
+      ? `This ends the first team's super over.${target !== null ? ` Target for the second team: ${target}.` : ""}`
+      : "This ends the super over. The result will be determined by the scores.";
+  } else if (inningsNum === 1) {
+    title = "Complete 1st Innings?";
+    body  = `This will end the 1st innings and start the innings break.${target !== null ? ` Target for 2nd innings: ${target}.` : ""}`;
+  } else {
+    title = "Complete 2nd Innings?";
+    body  = "This will end the match and finalise the result.";
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0">
       <div className="w-full max-w-sm rounded-2xl border border-outline-variant bg-surface p-5 shadow-2xl space-y-4">
-        <h3 className="font-display text-lg font-bold text-foreground">Complete Innings {inningsNum}?</h3>
-        {inningsNum === 1 && (
-          <p className="text-sm text-foreground-muted">
-            This will end the 1st innings and start the 2nd innings break.
-            {target !== null && ` Target for 2nd innings: ${target}.`}
-          </p>
-        )}
-        {inningsNum === 2 && (
-          <p className="text-sm text-foreground-muted">This will end the match and finalise the result.</p>
-        )}
+        <h3 className="font-display text-lg font-bold text-foreground">{title}</h3>
+        <p className="text-sm text-foreground-muted">{body}</p>
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 rounded-xl border border-outline-variant py-2.5 text-sm font-semibold hover:bg-surface-container">Cancel</button>
           <button onClick={onConfirm} className="flex-1 rounded-xl bg-tertiary py-2.5 text-sm font-semibold text-white">Complete Innings</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pause / Resume Panel ─────────────────────────────────────────────────────
+
+const PAUSE_REASONS = [
+  { value: "rain",             label: "Rain" },
+  { value: "bad_light",        label: "Bad Light" },
+  { value: "drinks",           label: "Drinks Break" },
+  { value: "injury",           label: "Injury" },
+  { value: "pitch_inspection", label: "Pitch Inspection" },
+  { value: "other",            label: "Other" },
+];
+
+function PauseMatchPanel({ match, user, token, onStateRefresh }) {
+  const isPaused   = match.status === "paused";
+  const canAct     = match.active_scorer_user_id === user?.id
+    || (match.match_teams ?? []).some((mt) => mt.team?.captain_user_id === user?.id)
+    || match.created_by === user?.id;
+
+  const [showForm, setShowForm] = useState(false);
+  const [reason,   setReason]   = useState("rain");
+  const [note,     setNote]     = useState("");
+  const [busy,     setBusy]     = useState(false);
+
+  if (!canAct) return null;
+
+  async function pause() {
+    setBusy(true);
+    try {
+      await apiRequest(`/api/matches/${match.code}/pause`, {
+        method: "POST", token, body: { reason, note: note || null },
+      });
+      setShowForm(false);
+      setNote("");
+      await onStateRefresh();
+    } catch (e) {
+      toast.error(e?.data?.message ?? "Could not pause match.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resume() {
+    setBusy(true);
+    try {
+      await apiRequest(`/api/matches/${match.code}/resume`, { method: "POST", token });
+      await onStateRefresh();
+    } catch (e) {
+      toast.error(e?.data?.message ?? "Could not resume match.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (isPaused) {
+    const label = PAUSE_REASONS.find((r) => r.value === match.pause_reason)?.label ?? match.pause_reason ?? "Break";
+    return (
+      <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Icon name="pause_circle" className="text-2xl text-amber-600" />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm text-amber-800">Match Paused — {label}</p>
+            {match.pause_note && <p className="text-xs text-amber-600 mt-0.5 truncate">{match.pause_note}</p>}
+          </div>
+        </div>
+        <button
+          onClick={resume}
+          disabled={busy}
+          className="w-full rounded-xl bg-amber-600 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+        >
+          {busy ? "Resuming…" : "▶ Resume Play"}
+        </button>
+      </div>
+    );
+  }
+
+  if (!showForm) {
+    return (
+      <button
+        onClick={() => setShowForm(true)}
+        className="w-full rounded-xl border border-outline-variant bg-surface py-2.5 text-sm font-semibold text-foreground-muted hover:bg-surface-container transition-colors flex items-center justify-center gap-2"
+      >
+        <Icon name="pause_circle" className="text-base" />
+        Pause Match
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-outline-variant bg-surface p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="font-display text-sm font-bold text-foreground">Pause Match</p>
+        <button onClick={() => setShowForm(false)} className="text-foreground-muted hover:text-foreground">
+          <Icon name="close" className="text-base" />
+        </button>
+      </div>
+      <select
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        className="w-full rounded-xl border border-outline-variant bg-surface-container-low px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
+      >
+        {PAUSE_REASONS.map((r) => (
+          <option key={r.value} value={r.value}>{r.label}</option>
+        ))}
+      </select>
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Optional note (e.g. heavy rain started)"
+        maxLength={255}
+        className="w-full rounded-xl border border-outline-variant bg-surface-container-low px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
+      />
+      <div className="flex gap-2">
+        <button onClick={() => setShowForm(false)} className="flex-1 rounded-xl border border-outline-variant py-2.5 text-xs font-semibold hover:bg-surface-container">
+          Cancel
+        </button>
+        <button onClick={pause} disabled={busy} className="flex-1 rounded-xl bg-amber-500 py-2.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50">
+          {busy ? "Pausing…" : "Confirm Pause"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Manual Commentary Panel ──────────────────────────────────────────────────
+
+function ManualCommentaryPanel({ match, user, token, onStateRefresh }) {
+  const canAct = match.active_scorer_user_id === user?.id
+    || (match.match_teams ?? []).some((mt) => mt.team?.captain_user_id === user?.id)
+    || match.created_by === user?.id;
+
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  if (!canAct) return null;
+
+  async function submit() {
+    const body = text.trim();
+    if (!body) return;
+    setBusy(true);
+    try {
+      await apiRequest(`/api/matches/${match.code}/commentary`, {
+        method: "POST", token, body: { body },
+      });
+      setText("");
+      toast.success("Commentary added.");
+      await onStateRefresh();
+    } catch (e) {
+      toast.error(e?.data?.message ?? "Could not add commentary.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-outline-variant bg-surface p-4 space-y-2">
+      <p className="font-display text-sm font-bold text-foreground">Add Commentary</p>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
+        placeholder="e.g. Rain has stopped, covers coming off…"
+        rows={2}
+        maxLength={500}
+        className="w-full rounded-xl border border-outline-variant bg-surface-container-low px-3 py-2.5 text-sm outline-none resize-none focus:border-primary focus:ring-2 focus:ring-primary"
+      />
+      <button
+        onClick={submit}
+        disabled={busy || !text.trim()}
+        className="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-white disabled:opacity-50 hover:bg-primary/90"
+      >
+        {busy ? "Posting…" : "Post Commentary"}
+      </button>
+    </div>
+  );
+}
+
+// ─── DLS Panel ────────────────────────────────────────────────────────────────
+
+function DlsPanel({ match, scorecard, user, token, onStateRefresh }) {
+  const canAct = match.active_scorer_user_id === user?.id
+    || (match.match_teams ?? []).some((mt) => mt.team?.captain_user_id === user?.id)
+    || match.created_by === user?.id;
+
+  const dlsApplied  = Boolean(match.dls_applied);
+  const innings1    = (match.innings ?? []).find((i) => i.innings_number === 1);
+  const innings2    = (match.innings ?? []).find((i) => i.innings_number === 2);
+  const isInn1Live  = ["live", "paused"].includes(match.status) && innings1?.status === "in_progress" && !innings2;
+  const isInn2Phase = match.status === "innings_break"
+    || (["live", "paused"].includes(match.status) && innings2);
+  const inn1Score   = innings1?.total_runs ?? 0;
+  const oversLimit  = match.overs_limit ?? 20;
+
+  const [showForm,  setShowForm]  = useState(false);
+  const [formMode,  setFormMode]  = useState("apply"); // "interrupt" | "apply"
+  const [overs,     setOvers]     = useState("");
+  const [busy,      setBusy]      = useState(false);
+
+  if (!canAct) return null;
+  // Only show during an active match (not upcoming/completed/abandoned)
+  if (!["live", "paused", "innings_break"].includes(match.status)) return null;
+
+  async function interruptInnings1() {
+    const n = parseInt(overs, 10);
+    if (!n || n < 1 || n > oversLimit) return toast.error(`Enter overs between 1 and ${oversLimit}.`);
+    setBusy(true);
+    try {
+      await apiRequest(`/api/matches/${match.code}/dls/interrupt-innings1`, {
+        method: "POST", token, body: { overs_to_play: n },
+      });
+      toast.success(`Innings 1 capped at ${n} overs.`);
+      setShowForm(false); setOvers("");
+      await onStateRefresh();
+    } catch (e) { toast.error(e?.data?.message ?? "Failed."); }
+    finally { setBusy(false); }
+  }
+
+  async function applyDls() {
+    const n = parseInt(overs, 10);
+    if (!n || n < 1 || n > oversLimit) return toast.error(`Enter overs between 1 and ${oversLimit}.`);
+    setBusy(true);
+    try {
+      const res = await apiRequest(`/api/matches/${match.code}/dls/apply`, {
+        method: "POST", token, body: { team2_overs: n },
+      });
+      toast.success(`DLS applied — target ${res.target} in ${n} overs.`);
+      setShowForm(false); setOvers("");
+      await onStateRefresh();
+    } catch (e) { toast.error(e?.data?.message ?? "Failed."); }
+    finally { setBusy(false); }
+  }
+
+  async function removeDls() {
+    setBusy(true);
+    try {
+      await apiRequest(`/api/matches/${match.code}/dls`, { method: "DELETE", token });
+      toast.success("DLS removed.");
+      await onStateRefresh();
+    } catch (e) { toast.error(e?.data?.message ?? "Failed."); }
+    finally { setBusy(false); }
+  }
+
+  // DLS is active — show the live dashboard (works for both innings_break and innings 2 live)
+  if (dlsApplied && isInn2Phase) {
+    const target   = match.dls_target;
+    const par      = match.dls_par;
+    const inn2Runs = innings2?.total_runs ?? 0;
+    const need     = Math.max(0, target - inn2Runs);
+    // During innings break par hasn't been calculated yet (team 2 hasn't batted) — show "—"
+    const isBreak  = match.status === "innings_break";
+    const abovePar = !isBreak && par != null && inn2Runs > par;
+    const belowPar = !isBreak && par != null && inn2Runs <= par;
+
+    return (
+      <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Icon name="water_drop" className="text-blue-600 text-xl" />
+            <p className="font-bold text-sm text-blue-800">
+              {isBreak ? `DLS — Target ${target}` : "DLS Active"}
+            </p>
+          </div>
+          <span className="text-[10px] font-bold text-blue-500 bg-blue-100 rounded-full px-2 py-0.5">
+            R1 {match.dls_team1_resources}% · R2 {match.dls_team2_resources}%
+          </span>
+        </div>
+        <p className="text-xs text-blue-600">
+          Team 1 scored {inn1Score}.{" "}
+          {isBreak
+            ? `Team 2 needs ${target} to win.`
+            : `Team 2 needs ${need} more to win.`}
+        </p>
+        {!isBreak && par != null && (
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-xl bg-white border border-blue-200 p-2">
+              <p className="text-xs font-bold text-blue-800">{target}</p>
+              <p className="text-[10px] text-blue-500">Target</p>
+            </div>
+            <div className={`rounded-xl border p-2 ${abovePar ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+              <p className={`text-xs font-bold ${abovePar ? "text-green-700" : "text-red-700"}`}>{par}</p>
+              <p className={`text-[10px] ${abovePar ? "text-green-500" : "text-red-500"}`}>
+                {abovePar ? "Above Par ↑" : "Below Par ↓"}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white border border-blue-200 p-2">
+              <p className="text-xs font-bold text-blue-800">{need}</p>
+              <p className="text-[10px] text-blue-500">To Win</p>
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setFormMode("apply"); setShowForm(true); }}
+            className="flex-1 rounded-xl border border-blue-300 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+          >
+            Update Overs
+          </button>
+          <button onClick={removeDls} disabled={busy} className="flex-1 rounded-xl border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">
+            {busy ? "…" : "Remove DLS"}
+          </button>
+        </div>
+        {showForm && (
+          <div className="space-y-2 pt-1 border-t border-blue-200">
+            <p className="text-xs text-blue-700 font-semibold">New team 2 overs allotted:</p>
+            <input type="number" min={1} max={oversLimit} value={overs} onChange={(e) => setOvers(e.target.value)}
+              placeholder={`1–${oversLimit}`}
+              className="w-full rounded-xl border border-outline-variant bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
+            <div className="flex gap-2">
+              <button onClick={() => setShowForm(false)} className="flex-1 rounded-xl border border-outline-variant py-2 text-xs font-semibold">Cancel</button>
+              <button onClick={applyDls} disabled={busy || !overs} className="flex-1 rounded-xl bg-blue-600 py-2 text-xs font-semibold text-white disabled:opacity-50">{busy ? "Applying…" : "Update"}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Normal state — show collapsed button with dropdown
+  if (!showForm) {
+    return (
+      <button
+        onClick={() => {
+          setFormMode(isInn1Live ? "interrupt" : "apply");
+          setShowForm(true);
+        }}
+        className="w-full rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+      >
+        <Icon name="water_drop" className="text-base" />
+        {isInn1Live ? "Rain — Reduce Innings 1 Overs" : "Apply DLS (Rain/Bad Light)"}
+      </button>
+    );
+  }
+
+  // Expanded form
+  return (
+    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon name="water_drop" className="text-blue-600 text-lg" />
+          <p className="font-display text-sm font-bold text-blue-800">
+            {formMode === "interrupt" ? "Reduce Innings 1 Overs" : "Apply DLS"}
+          </p>
+        </div>
+        <button onClick={() => setShowForm(false)} className="text-foreground-muted hover:text-foreground">
+          <Icon name="close" className="text-base" />
+        </button>
+      </div>
+      {formMode === "interrupt" ? (
+        <p className="text-xs text-blue-600">
+          How many overs will innings 1 face in total? (Already bowled: {innings1?.total_overs ?? 0})
+        </p>
+      ) : (
+        <p className="text-xs text-blue-600">
+          How many overs will team 2 have? (Original: {oversLimit})
+        </p>
+      )}
+      <input
+        type="number" min={1} max={oversLimit} value={overs}
+        onChange={(e) => setOvers(e.target.value)}
+        placeholder={`1–${oversLimit}`}
+        className="w-full rounded-xl border border-outline-variant bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+      />
+      {formMode === "apply" && overs && !isNaN(parseInt(overs)) && (
+        <p className="text-[11px] text-blue-500 bg-blue-100 rounded-lg px-3 py-1.5">
+          Team 1 scored {inn1Score}. DLS will calculate the revised target based on resources.
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button onClick={() => setShowForm(false)} className="flex-1 rounded-xl border border-outline-variant py-2.5 text-xs font-semibold hover:bg-surface-container">Cancel</button>
+        <button
+          onClick={formMode === "interrupt" ? interruptInnings1 : applyDls}
+          disabled={busy || !overs}
+          className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {busy ? "Working…" : formMode === "interrupt" ? "Set Overs" : "Apply DLS"}
+        </button>
       </div>
     </div>
   );
@@ -639,7 +1380,7 @@ function UndoConfirmModal({ delivery, onConfirm, onCancel, busy }) {
   );
 }
 
-// â”€â”€â”€ Man of the Match Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Man of the Match Modal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function MotmModal({ players, token, matchCode, onDone }) {
   const [selected, setSelected] = useState(null);
@@ -718,7 +1459,7 @@ function MotmModal({ players, token, matchCode, onDone }) {
   );
 }
 
-// â”€â”€â”€ Recent Overs Scroller (scoring page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Recent Overs Scroller (scoring page) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function ScoringRecentOvers({ state, scorecard }) {
   const { innings, current_over, bowler } = state;
@@ -813,7 +1554,7 @@ function ScoringRecentOvers({ state, scorecard }) {
   );
 }
 
-// â”€â”€â”€ Current Over Ball Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Current Over Ball Row â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function CurrentOverBallRow({ currentOver }) {
   const balls = (currentOver?.deliveries ?? [])
@@ -881,7 +1622,7 @@ function CurrentOverBallRow({ currentOver }) {
   );
 }
 
-// â”€â”€â”€ Main Scoring Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Main Scoring Panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onProposeCorrection }) {
   const router = useRouter();
@@ -906,7 +1647,7 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
   const [nonStrikerId, setNonStrikerId] = useState(null);
   const [bowlerId,     setBowlerId]     = useState(null);
 
-  // Sync selectors from server state on every update â€” server is source of truth
+  // Sync selectors from server state on every update â€" server is source of truth
   useEffect(() => {
     const nextStriker = state.last_striker_id ?? null;
     const nextNonStriker = state.last_non_striker_id ?? null;
@@ -938,10 +1679,29 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
   const [pendingExtras, setPendingExtras] = useState(null);
   const [markNextDeliveryFree, setMarkNextDeliveryFree] = useState(false);
   const [undoTarget,    setUndoTarget]    = useState(null);
+  const [wagonWheelPayload, setWagonWheelPayload] = useState(null); // pending delivery awaiting zone pick
+  const [trackWagonWheel, setTrackWagonWheel] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("ww_track");
+    return saved === null ? true : saved === "true";
+  });
+
+  function toggleWagonWheel() {
+    setTrackWagonWheel((prev) => {
+      const next = !prev;
+      localStorage.setItem("ww_track", String(next));
+      return next;
+    });
+  }
   const actionRefs = useRef({ handleRuns: null, handleExtra: null, handleWicket: null, handleUndo: null });
   const isSuperOver = Boolean(innings?.is_super_over);
 
   const canScore = isActiveScorer && innings?.status === "in_progress";
+
+  // If scorer loses control while picker is open, dismiss it so delivery isn't stuck pending
+  useEffect(() => {
+    if (!canScore && wagonWheelPayload) setWagonWheelPayload(null);
+  }, [canScore]); // eslint-disable-line react-hooks/exhaustive-deps
   const selectedPlayers = {
     striker: battingPlayers.find((p) => p.id === strikerId) ?? null,
     nonStriker: battingPlayers.find((p) => p.id === nonStrikerId) ?? null,
@@ -1029,10 +1789,12 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
       }
 
       // If overs are now exhausted, prompt to complete innings
+      // Super overs are limited to 1 over regardless of match.overs_limit
       const freshInnings = res.innings;
-      if (freshInnings && freshInnings.total_overs >= (match.overs_limit ?? 20)) {
+      const inningsLimit = freshInnings?.is_super_over ? 1 : (match.overs_limit ?? 20);
+      if (freshInnings && freshInnings.total_overs >= inningsLimit) {
         toast.info(
-          `All ${match.overs_limit} overs bowled - complete the innings to continue.`,
+          `All ${inningsLimit} over${inningsLimit !== 1 ? "s" : ""} bowled — complete the innings to continue.`,
           { duration: 8000, id: "overs-complete" }
         );
         setModal("complete");
@@ -1046,7 +1808,30 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
 
   function handleRuns(runs) {
     if (!canSubmitDelivery) return;
-    submit({ runs_bat: runs, extras_type: "none", extras_runs: 0 });
+    const payload = { runs_bat: runs, extras_type: "none", extras_runs: 0 };
+    if (runs > 0 && trackWagonWheel) {
+      setWagonWheelPayload(payload);
+    } else {
+      submit(payload);
+    }
+  }
+
+  function handleWagonWheelConfirm(zone) {
+    if (!wagonWheelPayload) return;
+    const payload = { ...wagonWheelPayload };
+    if (zone) {
+      const [x, y] = zoneCentroid(zone);
+      payload.shot_zone = { x, y, zone };
+    }
+    setWagonWheelPayload(null);
+    submit(payload);
+  }
+
+  function handleWagonWheelSkip() {
+    if (!wagonWheelPayload) return;
+    const payload = { ...wagonWheelPayload };
+    setWagonWheelPayload(null);
+    submit(payload);
   }
 
   function handleExtra(type) {
@@ -1079,15 +1864,22 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
 
   function handleWicketConfirm({ type, dismissed, fielder, runsTaken }) {
     setModal(null);
-    submit({
-      runs_bat:           type === "run_out" ? runsTaken : 0,
-      extras_type:        "none",
-      extras_runs:        0,
-      is_wicket:          true,
-      wicket_type:        type,
+    const runs = type === "run_out" ? runsTaken : 0;
+    const payload = {
+      runs_bat:            runs,
+      extras_type:         "none",
+      extras_runs:         0,
+      is_wicket:           true,
+      wicket_type:         type,
       dismissed_player_id: dismissed,
-      fielder_player_id:  fielder,
-    });
+      fielder_player_id:   fielder,
+    };
+    // Show wagon wheel for run-outs where batters actually ran (only if tracking enabled)
+    if (runs > 0 && trackWagonWheel) {
+      setWagonWheelPayload(payload);
+    } else {
+      submit(payload);
+    }
   }
 
   function handleRetiredHurt() {
@@ -1272,6 +2064,15 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
 
   return (
     <>
+      {/* Wagon Wheel Zone Picker */}
+      {wagonWheelPayload && (
+        <WagonWheelPicker
+          runs={wagonWheelPayload.runs_bat}
+          onConfirm={handleWagonWheelConfirm}
+          onSkip={handleWagonWheelSkip}
+        />
+      )}
+
       {/* Wicket modal */}
       {modal === "wicket" && (
         <WicketModal
@@ -1309,6 +2110,7 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
       {modal === "complete" && (
         <CompleteInningsModal
           inningsNum={innings?.innings_number ?? 1}
+          isSuperOver={isSuperOver}
           target={target}
           onConfirm={handleCompleteInnings}
           onCancel={() => setModal(null)}
@@ -1518,7 +2320,25 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
       {/* Delivery entry */}
       <div className="rounded-2xl border border-outline-variant bg-surface p-4 md:p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <h2 className="font-display text-base font-bold text-foreground">Enter Delivery</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-display text-base font-bold text-foreground">Enter Delivery</h2>
+            {/* Wagon Wheel tracking toggle */}
+            <button
+              onClick={toggleWagonWheel}
+              title={trackWagonWheel ? "Wagon wheel tracking ON — tap to disable" : "Wagon wheel tracking OFF — tap to enable"}
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-colors ${
+                trackWagonWheel
+                  ? "bg-indigo-50 border-indigo-300 text-indigo-700"
+                  : "border-outline-variant bg-surface-container text-foreground-muted"
+              }`}
+            >
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{ background: trackWagonWheel ? "#4f46e5" : "#9ca3af" }}
+              />
+              Wagon Wheel {trackWagonWheel ? "ON" : "OFF"}
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-foreground-muted">
             <span className="rounded-full border border-outline-variant bg-surface-container px-2.5 py-1">0/1/2/3/4/6</span>
             <span className="rounded-full border border-outline-variant bg-surface-container px-2.5 py-1">W wicket</span>
@@ -1614,7 +2434,7 @@ function ScoringPanel({ state, scorecard, user, token, onStateRefresh, onPropose
   );
 }
 
-// â”€â”€â”€ This Over Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ This Over Panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function ThisOverPanel({ currentOver, innings, onProposeCorrection }) {
   const deliveries = (currentOver?.deliveries ?? [])
@@ -1696,7 +2516,7 @@ function ThisOverPanel({ currentOver, innings, onProposeCorrection }) {
   );
 }
 
-// â”€â”€â”€ Manhattan Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Manhattan Chart â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function ManhattanChart({ scorecard, currentOver, innings }) {
   const oversLimit = scorecard?.innings?.[0]
@@ -1797,7 +2617,7 @@ function ManhattanChart({ scorecard, currentOver, innings }) {
   );
 }
 
-// â”€â”€â”€ Partnership Tracker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Partnership Tracker â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function PartnershipTracker({ batsmen, innings }) {
   const striker    = batsmen?.find((b) => b.is_striker) ?? batsmen?.[0];
@@ -1853,7 +2673,7 @@ function PartnershipTracker({ batsmen, innings }) {
   );
 }
 
-// â”€â”€â”€ RRR Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ RRR Panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function RRRPanel({ state, scorecard }) {
   const innings = state?.innings;
@@ -1908,7 +2728,7 @@ function RRRPanel({ state, scorecard }) {
   );
 }
 
-// â”€â”€â”€ Scorebook Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Scorebook Panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function ballBookStyle(ball) {
   if (!ball) return { cls: "border border-dashed border-outline-variant text-foreground-muted/40", label: "" };
@@ -2015,7 +2835,7 @@ function ScorebookInnings({ inn, oversLimit }) {
                   {over?.bowler ?? <span className="text-foreground-muted/30">-</span>}
                 </div>
 
-                {/* Balls â€” flex-wrap inside the 1fr cell; extras just add more chips, never push columns */}
+                {/* Balls â€" flex-wrap inside the 1fr cell; extras just add more chips, never push columns */}
                 <div className="px-2 py-1.5 flex flex-wrap gap-1 min-w-0">
                   {slots.map((ball, bi) => {
                     const { cls, label } = ballBookStyle(ball);
@@ -2121,7 +2941,7 @@ function ScorebookPanel({ scorecard, oversLimit }) {
   );
 }
 
-// â”€â”€â”€ Correct Delivery Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Correct Delivery Modal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 const WICKET_TYPES = ["bowled","caught","lbw","run_out","stumped","hit_wicket","retired_hurt","obstructing_field"];
 const EXTRAS_TYPES = ["none","wide","no_ball","bye","leg_bye"];
@@ -2266,7 +3086,7 @@ function CorrectDeliveryModal({ delivery, matchCode, innings, allPlayers, token,
   );
 }
 
-// â”€â”€â”€ Pending Corrections Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Pending Corrections Panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function PendingCorrectionsPanel({ corrections, token, matchCode, onRefresh }) {
   const [busy,        setBusy]        = useState(null);
@@ -2391,124 +3211,341 @@ function PendingCorrectionsPanel({ corrections, token, matchCode, onRefresh }) {
   );
 }
 
-// â”€â”€â”€ Innings Break Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Charts Tab ───────────────────────────────────────────────────────────────
+
+function InningsManhattan({ inn, currentOver, liveState, oversLimit }) {
+  const log       = inn?.overs_log ?? [];
+  const innNum    = inn?.innings_number;
+  const isLiveInn = liveState?.innings?.innings_number === innNum;
+  const completed = log.filter((o) => o.is_completed);
+  const liveBalls = isLiveInn ? (currentOver?.deliveries ?? []).filter((d) => !d.is_undone) : [];
+  const liveRuns  = liveBalls.reduce((s, d) => s + (d.runs_bat ?? 0) + (d.extras_runs ?? 0), 0);
+  const liveOverNum = isLiveInn ? currentOver?.over_number : null;
+  const limit     = inn?.is_super_over ? 1 : (oversLimit ?? 20);
+
+  if (completed.length === 0 && !liveOverNum) {
+    return <p className="text-sm text-foreground-muted text-center py-8">No overs bowled yet.</p>;
+  }
+
+  const maxRuns = Math.max(...completed.map((o) => o.runs ?? 0), liveRuns, 8);
+  const BAR_W = 14, GAP = 3, PAD_L = 24, PAD_B = 18, PAD_T = 8, CHART_H = 90;
+  const svgW = PAD_L + limit * (BAR_W + GAP) + 8;
+  const svgH = CHART_H + PAD_T + PAD_B;
+  const barH = (r) => Math.max(2, (r / maxRuns) * CHART_H);
+  const barX = (n) => PAD_L + (n - 1) * (BAR_W + GAP);
+  const barY = (r) => PAD_T + CHART_H - barH(r);
+  const barColor = (r, w) => w >= 3 ? "#ef4444" : r >= 15 ? "#6366f1" : r >= 10 ? "#3b82f6" : "#60a5fa";
+  const ySteps = [0, Math.round(maxRuns / 2), maxRuns];
+
+  return (
+    <div className="overflow-x-auto">
+      <svg width={svgW} height={svgH} style={{ minWidth: 200 }}>
+        {ySteps.map((v) => {
+          const y = PAD_T + CHART_H - barH(v);
+          return (
+            <g key={v}>
+              <line x1={PAD_L - 2} y1={y} x2={svgW - 4} y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="3,2" />
+              <text x={PAD_L - 4} y={y + 3.5} textAnchor="end" fontSize="7" fill="#9ca3af">{v}</text>
+            </g>
+          );
+        })}
+        {completed.map((ov) => (
+          <g key={ov.over_number}>
+            <rect x={barX(ov.over_number)} y={barY(ov.runs ?? 0)} width={BAR_W} height={barH(ov.runs ?? 0)} rx="2" fill={barColor(ov.runs ?? 0, ov.wickets ?? 0)} />
+            {(ov.wickets ?? 0) > 0 && (
+              <text x={barX(ov.over_number) + BAR_W / 2} y={barY(ov.runs ?? 0) - 2} textAnchor="middle" fontSize="7" fill="#ef4444" fontWeight="bold">
+                {Array(ov.wickets).fill("W").join("")}
+              </text>
+            )}
+          </g>
+        ))}
+        {liveOverNum && liveRuns > 0 && (
+          <rect x={barX(liveOverNum)} y={barY(liveRuns)} width={BAR_W} height={barH(liveRuns)} rx="2" fill="#3b82f6" opacity="0.5" />
+        )}
+        {Array.from({ length: Math.floor(limit / 5) + 1 }, (_, i) => i * 5).filter((n) => n > 0).map((n) => (
+          <text key={n} x={barX(n) + BAR_W / 2} y={svgH - 4} textAnchor="middle" fontSize="7" fill="#9ca3af">{n}</text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function InningsWorm({ inn, currentOver, liveState, oversLimit }) {
+  const log       = inn?.overs_log ?? [];
+  const innNum    = inn?.innings_number;
+  const isLiveInn = liveState?.innings?.innings_number === innNum;
+  const limit     = inn?.is_super_over ? 1 : (oversLimit ?? 20);
+  const points    = [{ over: 0, runs: 0 }];
+  let cumRuns = 0;
+  log.filter((o) => o.is_completed).forEach((o) => {
+    cumRuns += o.runs ?? 0;
+    points.push({ over: o.over_number, runs: cumRuns });
+  });
+  if (isLiveInn && currentOver) {
+    const liveBalls = (currentOver.deliveries ?? []).filter((d) => !d.is_undone);
+    const liveRuns  = liveBalls.reduce((s, d) => s + (d.runs_bat ?? 0) + (d.extras_runs ?? 0), 0);
+    const overFrac  = currentOver.over_number - 1 + liveBalls.filter((d) => d.is_legal_ball).length / 6;
+    if (liveRuns > 0) points.push({ over: overFrac, runs: cumRuns + liveRuns });
+  }
+
+  if (points.length < 2) {
+    return <p className="text-sm text-foreground-muted text-center py-8">No overs bowled yet.</p>;
+  }
+
+  const W = 300, H = 130, PL = 30, PR = 10, PT = 10, PB = 22;
+  const gW = W - PL - PR, gH = H - PT - PB;
+  const maxRuns = Math.max(...points.map((p) => p.runs), 20);
+  const toX = (o) => PL + (o / limit) * gW;
+  const toY = (r) => PT + gH - (r / maxRuns) * gH;
+  const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.over).toFixed(1)},${toY(p.runs).toFixed(1)}`).join(" ");
+  const yTicks = [0, Math.round(maxRuns * 0.5), maxRuns];
+  const xTicks = Array.from({ length: Math.floor(limit / 5) + 1 }, (_, i) => i * 5);
+
+  return (
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 240 }}>
+        {yTicks.map((t) => (
+          <g key={t}>
+            <line x1={PL} y1={toY(t)} x2={W - PR} y2={toY(t)} stroke="#f3f4f6" strokeWidth="1" />
+            <text x={PL - 4} y={toY(t) + 3.5} textAnchor="end" fontSize="8" fill="#9ca3af">{t}</text>
+          </g>
+        ))}
+        {xTicks.map((t) => (
+          <g key={t}>
+            <line x1={toX(t)} y1={PT} x2={toX(t)} y2={H - PB} stroke="#f3f4f6" strokeWidth="1" />
+            <text x={toX(t)} y={H - PB + 10} textAnchor="middle" fontSize="8" fill="#9ca3af">{t}</text>
+          </g>
+        ))}
+        <path d={path} fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        <text x={PL + gW / 2} y={H - 2} textAnchor="middle" fontSize="8" fill="#6b7280">Overs</text>
+      </svg>
+    </div>
+  );
+}
+
+function InningsPartnerships({ inn }) {
+  const fow = inn?.fall_of_wickets ?? [];
+  if (!fow.length) return <p className="text-sm text-foreground-muted text-center py-8">No wickets fallen.</p>;
+  const partnerships = fow.map((wkt, i) => ({
+    wkt: wkt.wicket,
+    runs: wkt.partnership_runs != null ? wkt.partnership_runs : (wkt.runs ?? 0) - (i === 0 ? 0 : fow[i - 1].runs),
+    dismissed: wkt.player,
+    over: wkt.over,
+    atScore: wkt.runs,
+  }));
+  const maxRuns = Math.max(...partnerships.map((p) => p.runs), 1);
+  return (
+    <div className="divide-y divide-outline-variant">
+      {partnerships.map((p) => (
+        <div key={p.wkt} className="py-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[10px] font-bold text-foreground-muted shrink-0">{p.wkt}W</span>
+              <span className="text-xs text-foreground truncate">{p.dismissed}</span>
+              <span className="text-[10px] text-outline">out {p.over} ov</span>
+            </div>
+            <span className="text-sm font-bold text-foreground tabular-nums shrink-0 ml-3">
+              {p.runs} <span className="text-xs font-normal text-foreground-muted">runs</span>
+            </span>
+          </div>
+          <div className="h-2 bg-surface-container rounded-full overflow-hidden">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.round((p.runs / maxRuns) * 100)}%` }} />
+          </div>
+          <p className="text-[10px] text-foreground-muted mt-1 tabular-nums">
+            Score at fall: <span className="font-semibold text-foreground">{p.atScore}</span>
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChartsTab({ scorecard, liveState }) {
+  const innings    = scorecard?.innings ?? [];
+  const oversLimit = scorecard?.match?.overs_limit ?? 20;
+  const currentOver = liveState?.current_over;
+  const [activeInn, setActiveInn] = useState(innings[innings.length - 1]?.innings_number ?? 1);
+
+  if (!innings.length) {
+    return (
+      <div className="rounded-2xl border border-outline-variant bg-surface p-10 text-center">
+        <Icon name="bar_chart" className="text-4xl text-outline mb-2" />
+        <p className="text-sm text-foreground-muted">Charts will appear once play has started.</p>
+      </div>
+    );
+  }
+
+  const inn = innings.find((i) => i.innings_number === activeInn) ?? innings[innings.length - 1];
+
+  return (
+    <div className="space-y-4">
+      {/* Innings selector */}
+      {innings.length > 1 && (
+        <div className="flex gap-1.5 flex-wrap">
+          {innings.map((i) => (
+            <button
+              key={i.innings_number}
+              onClick={() => setActiveInn(i.innings_number)}
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
+                activeInn === i.innings_number
+                  ? "bg-primary text-white"
+                  : "bg-surface border border-outline-variant text-foreground-muted hover:text-foreground"
+              }`}
+            >
+              {i.is_super_over ? "Super Over" : `Inn ${i.innings_number}`}
+              {i.batting_team ? ` · ${i.batting_team}` : ""}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Manhattan */}
+      <div className="rounded-2xl border border-outline-variant bg-surface p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-display text-sm font-bold text-foreground">Manhattan</h3>
+          <span className="text-[10px] text-foreground-muted">Runs per over</span>
+        </div>
+        <InningsManhattan inn={inn} currentOver={currentOver} liveState={liveState} oversLimit={oversLimit} />
+      </div>
+
+      {/* Worm */}
+      <div className="rounded-2xl border border-outline-variant bg-surface p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-display text-sm font-bold text-foreground">Worm</h3>
+          <span className="text-[10px] text-foreground-muted">Cumulative runs</span>
+        </div>
+        <InningsWorm inn={inn} currentOver={currentOver} liveState={liveState} oversLimit={oversLimit} />
+      </div>
+
+      {/* Partnerships */}
+      <div className="rounded-2xl border border-outline-variant bg-surface p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-display text-sm font-bold text-foreground">Partnerships</h3>
+          <span className="text-[10px] text-foreground-muted">Runs per wicket</span>
+        </div>
+        <InningsPartnerships inn={inn} />
+      </div>
+    </div>
+  );
+}
+
+// â"€â"€â"€ Innings Break Banner â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function InningsBreakBanner({ match, scorecard, token, user, onStateRefresh }) {
-  const innings2 = match.innings?.find?.((i) => i.innings_number === 2);
-  const innings1 = match.innings?.find?.((i) => i.innings_number === 1);
-  const superOver1 = match.innings?.find?.((i) => i.is_super_over && i.innings_number === 3);
-  const regulationTie = Boolean(
-    match.status === "innings_break"
-    && innings1?.status === "completed"
-    && innings2?.status === "completed"
-    && Number(innings1?.total_runs ?? -1) === Number(innings2?.total_runs ?? -2)
-  );
-  const superOverTie = Boolean(
-    match.status === "innings_break"
-    && superOver1?.status === "completed"
-    && !match.innings?.some?.((i) => i.innings_number === 4)
-  );
-  const currentInnings = match.innings?.find?.((i) => i.is_super_over && i.status === "in_progress")
-    ?? match.innings?.find?.((i) => i.is_super_over && i.innings_number === 3)
-    ?? match.innings?.find?.((i) => i.is_super_over && i.innings_number === 4)
-    ?? null;
-  const isSuperOver = Boolean(currentInnings?.is_super_over);
-  const isTieBreakPending = Boolean(match.tie_break_pending || regulationTie || superOverTie);
-  const tieBreakPhase = match.tie_break_phase ?? (superOverTie ? "super_over" : regulationTie ? "regulation" : isSuperOver ? "super_over" : "regulation");
+  const allInnings      = match.innings ?? [];
+  const innings1        = allInnings.find((i) => i.innings_number === 1);
+  const innings2        = allInnings.find((i) => i.innings_number === 2);
+  // Current innings in match (what liveState returns as match.current_innings_id points to)
+  const currentInnings  = allInnings.find((i) => i.id === match.current_innings_id) ?? null;
+  const isSuperOver     = Boolean(currentInnings?.is_super_over);
+  const isTieBreakPending = Boolean(match.tie_break_pending);
+  const isSuperOverTie  = isTieBreakPending && match.tie_break_phase === "super_over";
   const interruptionReason = match.super_over_interruption_reason;
-  const interruptionNote = match.super_over_interruption_note;
-  const scorecardInnings1 = scorecard?.innings?.find((i) => i.innings_number === 1);
-  const target = inningsRuns(scorecardInnings1 ?? innings1) !== null
-    ? inningsRuns(scorecardInnings1 ?? innings1) + 1
+  const interruptionNote   = match.super_over_interruption_note;
+
+  // Target for this break:
+  // - Regular innings break: inn1 runs + 1
+  // - Super over first-leg break: the completed super over first leg runs + 1
+  //   The completed first-leg super over is the one just before current_innings_id
+  const completedFirstLeg = isSuperOver
+    ? allInnings.find((i) => i.is_super_over && i.status === "completed" && i.innings_number === currentInnings.innings_number - 1)
     : null;
+  const firstLegSource  = completedFirstLeg ?? innings1;
+  const firstLegRuns    = Number(firstLegSource?.total_runs ?? 0);
+  const target          = firstLegSource ? firstLegRuns + 1 : null;
+
   const [starting, setStarting] = useState(false);
   const isScorer = match.active_scorer_user_id === user?.id;
-  const isSuperOverTie = isTieBreakPending && tieBreakPhase === "super_over";
 
-  async function startInnings2() {
+  async function resume() {
     setStarting(true);
     try {
-      await apiRequest(`/api/matches/${match.code}/resume-innings`, {
-        method: "POST",
-        token,
-      });
+      await apiRequest(`/api/matches/${match.code}/resume-innings`, { method: "POST", token });
       await onStateRefresh();
     } catch (e) {
-      toast.error(e?.data?.message ?? "Failed to start 2nd innings.");
+      toast.error(e?.data?.message ?? "Failed to start innings.");
     } finally {
       setStarting(false);
     }
   }
 
-  async function resolveTieBreak(decision) {
+  async function decideTieBreak(decision) {
     setStarting(true);
     try {
       await apiRequest(`/api/matches/${match.code}/tie-break/resolve`, {
-        method: "POST",
-        token,
-        body: { decision },
+        method: "POST", token, body: { decision },
       });
       await onStateRefresh();
     } catch (e) {
-      toast.error(e?.data?.message ?? "Failed to update tie-break decision.");
+      toast.error(e?.data?.message ?? "Failed to resolve tie break.");
     } finally {
       setStarting(false);
     }
+  }
+
+  // Label logic
+  let heading, subtext, resumeLabel;
+  if (isTieBreakPending) {
+    heading    = isSuperOverTie ? "Super Over Tied ⚡" : "Tie Break Decision ⚖️";
+    subtext    = isSuperOverTie
+      ? "The super over finished level. Play another super over or keep the match tied."
+      : "Scores are level after regulation. Choose a super over or declare a tie.";
+  } else if (interruptionReason) {
+    heading    = "Super Over Paused";
+    subtext    = `Interrupted: ${interruptionReason.replace(/_/g, " ")}${interruptionNote ? ` — ${interruptionNote}` : ""}`;
+    resumeLabel = "Resume Super Over";
+  } else if (isSuperOver) {
+    heading    = "Super Over Break ⚡";
+    subtext    = completedFirstLeg
+      ? `${completedFirstLeg.batting_team?.name ?? "Team"} scored ${firstLegRuns}. Target: ${target}`
+      : "First super over leg complete.";
+    resumeLabel = "Start 2nd Super Over Leg";
+  } else {
+    heading    = "Innings Break";
+    subtext    = target ? `1st innings complete · Target: ${target}` : "1st innings complete.";
+    resumeLabel = "Start 2nd Innings";
   }
 
   return (
     <div className="rounded-2xl border-2 border-primary/20 bg-primary/5 p-6 text-center space-y-3">
       <Icon name="sports_cricket" className="text-4xl text-primary" />
-      <h2 className="font-display text-xl font-bold text-foreground">
-        {isTieBreakPending
-          ? (isSuperOverTie ? "Super Over Tied" : "Tie Break Decision")
-          : interruptionReason ? "Super Over Paused" : isSuperOver ? "Super Over Break" : "Innings Break"}
-      </h2>
-      <p className="text-sm text-foreground-muted">
-        {isTieBreakPending
-          ? (isSuperOverTie
-              ? "The super over finished level. Choose another super over or keep the match tied."
-              : "Scores are level. Choose a super over or keep the match tied.")
-          : isSuperOver
-            ? "Regulation play finished level · Super over will decide the winner"
-            : <>1st innings complete · Target: <strong className="text-foreground">{target}</strong></>}
-      </p>
-      {interruptionReason && (
-        <p className="text-xs text-foreground-muted">
-          Interrupted due to {interruptionReason.replace("_", " ")}.{interruptionNote ? ` ${interruptionNote}` : ""}
-        </p>
-      )}
-      {!isTieBreakPending && innings2 && (
+      <h2 className="font-display text-xl font-bold text-foreground">{heading}</h2>
+      <p className="text-sm text-foreground-muted">{subtext}</p>
+
+      {/* Chase info for regular innings break */}
+      {!isTieBreakPending && !isSuperOver && !interruptionReason && innings2 && target && (
         <p className="text-sm text-foreground-muted">
-          {innings2.battingTeam?.name ?? "Team"} need {target} to win.
+          {currentInnings?.batting_team?.name ?? "Chasing team"} need{" "}
+          <strong className="text-foreground">{target}</strong> to win.
         </p>
       )}
+
       {isScorer && (
         <div className="flex flex-wrap justify-center gap-2">
           {isTieBreakPending ? (
             <>
               <button
-                onClick={() => resolveTieBreak("super_over")}
+                onClick={() => decideTieBreak("super_over")}
                 disabled={starting}
                 className="cricket-gradient rounded-xl px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {starting ? "Starting…" : isSuperOverTie ? "Start Next Super Over" : "Start Super Over"}
               </button>
               <button
-                onClick={() => resolveTieBreak("tie")}
+                onClick={() => decideTieBreak("tie")}
                 disabled={starting}
                 className="rounded-xl border border-outline-variant bg-white px-5 py-3 text-sm font-semibold text-foreground hover:bg-surface-container disabled:opacity-50"
               >
-                Keep Match Tie
+                Declare Match Tied
               </button>
             </>
           ) : (
             <button
-              onClick={startInnings2}
+              onClick={resume}
               disabled={starting}
               className="cricket-gradient rounded-xl px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {starting ? "Starting…" : isSuperOver ? "Start Super Over" : "Start 2nd Innings"}
+              {starting ? "Starting…" : resumeLabel}
             </button>
           )}
         </div>
@@ -2517,7 +3554,7 @@ function InningsBreakBanner({ match, scorecard, token, user, onStateRefresh }) {
   );
 }
 
-// â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Page â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 export default function LiveScoringPage() {
   const { token, user } = useUser();
@@ -2531,16 +3568,24 @@ export default function LiveScoringPage() {
   const [error,        setError]        = useState("");
   const [activeTab,    setActiveTab]    = useState("scoring");
   const [wsStatus,     setWsStatus]     = useState("connecting"); // "connecting" | "connected" | "disconnected"
+  // Auto-switch away from scoring tab when match ends
+  useEffect(() => {
+    if (state?.match?.status === "completed" || state?.match?.status === "abandoned") {
+      setActiveTab((prev) => prev === "scoring" ? "scorebook" : prev);
+    }
+  }, [state?.match?.status]);
   const [correctingDelivery, setCorrectingDelivery] = useState(null); // delivery object to correct
 
   const fetchState = useCallback(async () => {
-    if (!code || !token) return;
+    if (!code || !token) return null;
     try {
       const data = await apiRequest(`/api/matches/${code}/state`, { token });
       setState(data);
       setError("");
+      return data;
     } catch (e) {
       setError(e?.data?.message ?? "Failed to load live state.");
+      return null;
     }
   }, [code, token]);
 
@@ -2583,7 +3628,12 @@ export default function LiveScoringPage() {
     const channel = echo.channel(`match.${code}`);
 
     channel.listen(".state.updated", () => {
-      fetchState();
+      fetchState().then((st) => {
+        // After state refresh, if DLS is active and innings 2 is live, recalculate par
+        if (st?.match?.dls_applied && st?.innings?.innings_number === 2 && st?.match?.status === "live") {
+          recalcDlsPar();
+        }
+      });
       fetchScorecard();
       fetchCorrections();
     });
@@ -2605,6 +3655,14 @@ export default function LiveScoringPage() {
   async function refresh() {
     await Promise.all([fetchState(), fetchScorecard(), fetchCorrections()]);
   }
+
+  // Auto-recalculate DLS par after each delivery when DLS is active on innings 2
+  const recalcDlsPar = useCallback(async () => {
+    if (!code || !token) return;
+    try {
+      await apiRequest(`/api/matches/${code}/dls/recalculate-par`, { method: "POST", token });
+    } catch { /* non-critical */ }
+  }, [code, token]);
 
   if (!code) {
     return (
@@ -2634,26 +3692,7 @@ export default function LiveScoringPage() {
 
   const { match, innings } = state;
   const matchStatus = match.status;
-
-  // Match completed - redirect to scorecard
-  if (matchStatus === "completed" || matchStatus === "abandoned") {
-    return (
-      <AppShell title="Match Over" subtitle={`${match.title ?? match.code}`}>
-        <div className="flex flex-col items-center gap-6 py-16 text-center">
-          <Icon name="emoji_events" className="text-5xl text-secondary" />
-          <h2 className="font-display text-2xl font-bold text-foreground">
-            {matchStatus === "completed" ? "Match Complete!" : "Match Abandoned"}
-          </h2>
-          <Link
-            href={`/matches/${code}`}
-            className="cricket-gradient rounded-xl px-6 py-3 text-sm font-semibold text-white"
-          >
-            View Final Scorecard &rarr;
-          </Link>
-        </div>
-      </AppShell>
-    );
-  }
+  const isMatchOver = matchStatus === "completed" || matchStatus === "abandoned";
 
   const teamNames = (match.match_teams ?? []).reduce((acc, mt) => {
     acc[mt.role] = mt.team?.name ?? mt.role;
@@ -2690,12 +3729,37 @@ export default function LiveScoringPage() {
         </div>
       }
     >
-      {/* Page tabs */}
+      {/* Match over banner */}
+      {isMatchOver && (
+        <div className="mb-5 rounded-2xl border border-secondary/20 bg-secondary/5 px-5 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Icon name="emoji_events" className="text-3xl text-secondary shrink-0" />
+            <div>
+              <p className="font-display font-bold text-foreground">
+                {matchStatus === "completed" ? "Match Complete" : "Match Abandoned"}
+              </p>
+              {scorecard?.result?.summary && (
+                <p className="text-sm text-foreground-muted mt-0.5">{scorecard.result.summary}</p>
+              )}
+            </div>
+          </div>
+          <Link
+            href={`/matches/${code}`}
+            target="_blank"
+            className="cricket-gradient shrink-0 rounded-xl px-4 py-2 text-xs font-semibold text-white"
+          >
+            Public Page →
+          </Link>
+        </div>
+      )}
+
+      {/* Page tabs — hide Scoring tab once match is over */}
       <div className="flex gap-1 border-b border-outline-variant mb-6 -mx-4 px-4 md:-mx-6 md:px-6">
         {[
-          { id: "scoring",   label: "Scoring",   icon: "sports_cricket" },
+          { id: "scoring",   label: "Scoring",   icon: "sports_cricket", hidden: isMatchOver },
+          { id: "charts",    label: "Charts",    icon: "bar_chart" },
           { id: "scorebook", label: "Scorebook", icon: "book" },
-        ].map((t) => (
+        ].filter((t) => !t.hidden).map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
@@ -2745,6 +3809,17 @@ export default function LiveScoringPage() {
                 user={user}
                 onStateRefresh={refresh}
               />
+            ) : matchStatus === "paused" ? (
+              <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 text-center space-y-2">
+                <Icon name="pause_circle" className="text-4xl text-amber-500" />
+                <h2 className="font-display text-lg font-bold text-amber-800">
+                  {PAUSE_REASONS.find((r) => r.value === match.pause_reason)?.label ?? "Match Paused"}
+                </h2>
+                {match.pause_note && (
+                  <p className="text-sm text-amber-600">{match.pause_note}</p>
+                )}
+                <p className="text-xs text-amber-500">Scoring is locked. Resume play from the sidebar when ready.</p>
+              </div>
             ) : (
               <ScoringPanel
                 state={state}
@@ -2759,7 +3834,7 @@ export default function LiveScoringPage() {
 
           {/* Right: sidebar */}
           <aside className="space-y-5">
-            {matchStatus !== "innings_break" && (
+            {matchStatus !== "innings_break" && matchStatus !== "paused" && (
               <>
                 {/* RRR chase panel - 2nd innings only */}
                 <RRRPanel state={state} scorecard={scorecard} />
@@ -2773,14 +3848,11 @@ export default function LiveScoringPage() {
                   onProposeCorrection={setCorrectingDelivery}
                 />
 
-                {/* Manhattan chart */}
-                <ManhattanChart
-                  scorecard={scorecard}
-                  currentOver={state.current_over}
-                  innings={innings}
-                />
               </>
             )}
+            <DlsPanel match={match} scorecard={scorecard} user={user} token={token} onStateRefresh={refresh} />
+            <PauseMatchPanel match={match} user={user} token={token} onStateRefresh={refresh} />
+            <ManualCommentaryPanel match={match} user={user} token={token} onStateRefresh={refresh} />
             <ScorerLockPanel
               match={match}
               user={user}
@@ -2818,6 +3890,11 @@ export default function LiveScoringPage() {
             </div>
           </aside>
         </div>
+      )}
+
+      {/* Charts tab */}
+      {activeTab === "charts" && (
+        <ChartsTab scorecard={scorecard} liveState={state} />
       )}
 
       {/* Scorebook tab */}
