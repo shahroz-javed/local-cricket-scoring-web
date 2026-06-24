@@ -25,11 +25,12 @@ export default function TournamentsPage() {
   const { token } = useUser();
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState("");
 
   useEffect(() => {
     apiRequest("/api/tournaments", { token })
-      .then(setTournaments)
-      .catch(() => {})
+      .then(data => { setTournaments(data); setError(""); })
+      .catch(err => setError(err?.message || "Failed to load tournaments."))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -51,8 +52,19 @@ export default function TournamentsPage() {
           </Link>
         </div>
 
+        {/* Error state */}
+        {!loading && error && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-start gap-3">
+            <Icon name="error_outline" className="text-tertiary text-xl shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-tertiary">Could not load tournaments</p>
+              <p className="text-xs text-red-600 mt-0.5">{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Empty state */}
-        {!loading && tournaments.length === 0 && (
+        {!loading && !error && tournaments.length === 0 && (
           <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
             <div className="w-16 h-16 gold-gradient rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Icon name="emoji_events" className="text-3xl text-white" />
@@ -71,7 +83,7 @@ export default function TournamentsPage() {
         )}
 
         {/* Tournament list */}
-        {!loading && tournaments.length > 0 && (
+        {!loading && !error && tournaments.length > 0 && (
           <div className="space-y-3">
             {tournaments.map(t => {
               const badge = STATUS_BADGE[t.status] ?? STATUS_BADGE.draft;

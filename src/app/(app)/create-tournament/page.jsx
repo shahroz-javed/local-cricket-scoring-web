@@ -180,6 +180,20 @@ function Step1({ data, setData }) {
         </Field>
       </div>
 
+      <Field label="Team Limit" hint="Maximum number of teams allowed. Leave blank for unlimited.">
+        <Input
+          type="number"
+          min={2}
+          max={256}
+          placeholder="e.g. 12, 16, 20 — leave blank for unlimited"
+          value={data.max_teams ?? ""}
+          onChange={e => {
+            const v = e.target.value;
+            setData(d => ({ ...d, max_teams: v === "" ? null : (parseInt(v) || null) }));
+          }}
+        />
+      </Field>
+
       <Field label="Default Venue" hint="Applied to all fixtures unless overridden.">
         <Input
           placeholder="e.g. National Cricket Ground"
@@ -511,6 +525,7 @@ function Step4({ data }) {
         <p className="font-bold text-foreground mb-3">Tournament Details</p>
         <ReviewRow label="Name"         value={data.title} />
         <ReviewRow label="Format"       value={FORMAT_LABELS[data.format]} />
+        <ReviewRow label="Team Limit"   value={data.max_teams ? `${data.max_teams} teams max` : "Unlimited"} />
         <ReviewRow label="Match Type"   value={data.match_type} />
         <ReviewRow label="Overs"        value={data.overs_limit + " overs"} />
         <ReviewRow label="Venue"        value={data.default_venue} />
@@ -582,6 +597,7 @@ const DEFAULT_DATA = {
   super_over_in_knockout:  true,
   third_place_playoff:     false,
   teams_qualify_per_group: 2,
+  max_teams:               null,
   entry_fee_amount:        0,
   entry_fee_currency:      "PKR",
   entry_fee_notes:         "",
@@ -641,6 +657,7 @@ export default function CreateTournamentPage() {
         super_over_in_knockout:  data.super_over_in_knockout,
         third_place_playoff:     data.third_place_playoff,
         teams_qualify_per_group: data.teams_qualify_per_group,
+        max_teams:               data.max_teams || undefined,
         entry_fee_amount:        data.entry_fee_amount || 0,
         entry_fee_currency:      data.entry_fee_currency || "PKR",
         entry_fee_notes:         data.entry_fee_notes   || undefined,
@@ -650,10 +667,11 @@ export default function CreateTournamentPage() {
 
       const tournament = await apiRequest("/api/tournaments", { method: "POST", token, body: payload });
 
-      // Create prizes separately, but do not block the tournament from saving if one prize fails.
+      // Create prizes separately; collect failures and surface them on the manage page.
       const prizes = (data.prizes || []).filter(p => p.label);
-      try {
-        for (const [i, prize] of prizes.entries()) {
+      let prizesFailed = false;
+      for (const [i, prize] of prizes.entries()) {
+        try {
           await apiRequest(`/api/tournaments/${tournament.code}/prizes`, {
             method: "POST",
             token,
@@ -667,12 +685,13 @@ export default function CreateTournamentPage() {
               sort_order:  i,
             },
           });
+        } catch {
+          prizesFailed = true;
         }
-      } catch (prizeError) {
-        console.warn("Prize creation skipped:", prizeError);
       }
 
-      router.push(`/tournaments/${tournament.code}/manage`);
+      const dest = `/tournaments/${tournament.code}/manage${prizesFailed ? "?prize_warning=1" : ""}`;
+      router.push(dest);
     } catch (err) {
       setError(err?.data?.message || "Something went wrong. Please try again.");
     } finally {

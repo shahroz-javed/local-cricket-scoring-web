@@ -3276,23 +3276,27 @@ function InningsWorm({ inn, currentOver, liveState, oversLimit }) {
   const isLiveInn = liveState?.innings?.innings_number === innNum;
   const limit     = inn?.is_super_over ? 1 : (oversLimit ?? 20);
   const points    = [{ over: 0, runs: 0 }];
+  const wicketDots = [];
   let cumRuns = 0;
   log.filter((o) => o.is_completed).forEach((o) => {
     cumRuns += o.runs ?? 0;
     points.push({ over: o.over_number, runs: cumRuns });
+    if ((o.wickets ?? 0) > 0) wicketDots.push({ over: o.over_number, runs: cumRuns, count: o.wickets });
   });
   if (isLiveInn && currentOver) {
     const liveBalls = (currentOver.deliveries ?? []).filter((d) => !d.is_undone);
     const liveRuns  = liveBalls.reduce((s, d) => s + (d.runs_bat ?? 0) + (d.extras_runs ?? 0), 0);
     const overFrac  = currentOver.over_number - 1 + liveBalls.filter((d) => d.is_legal_ball).length / 6;
     if (liveRuns > 0) points.push({ over: overFrac, runs: cumRuns + liveRuns });
+    const liveWkts = liveBalls.filter((d) => d.is_wicket);
+    if (liveWkts.length > 0) wicketDots.push({ over: overFrac, runs: cumRuns + liveRuns, count: liveWkts.length });
   }
 
   if (points.length < 2) {
     return <p className="text-sm text-foreground-muted text-center py-8">No overs bowled yet.</p>;
   }
 
-  const W = 300, H = 130, PL = 30, PR = 10, PT = 10, PB = 22;
+  const W = 300, H = 130, PL = 30, PR = 10, PT = 12, PB = 22;
   const gW = W - PL - PR, gH = H - PT - PB;
   const maxRuns = Math.max(...points.map((p) => p.runs), 20);
   const toX = (o) => PL + (o / limit) * gW;
@@ -3302,7 +3306,7 @@ function InningsWorm({ inn, currentOver, liveState, oversLimit }) {
   const xTicks = Array.from({ length: Math.floor(limit / 5) + 1 }, (_, i) => i * 5);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 240 }}>
         {yTicks.map((t) => (
           <g key={t}>
@@ -3317,6 +3321,15 @@ function InningsWorm({ inn, currentOver, liveState, oversLimit }) {
           </g>
         ))}
         <path d={path} fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Fat red wicket dots */}
+        {wicketDots.map((d, i) => (
+          <g key={i}>
+            <circle cx={toX(d.over)} cy={toY(d.runs)} r="5" fill="#ef4444" stroke="white" strokeWidth="1.5" />
+            <text x={toX(d.over)} y={toY(d.runs) + 3.5} textAnchor="middle" fontSize="6" fill="white" fontWeight="bold">
+              {d.count > 1 ? d.count : "W"}
+            </text>
+          </g>
+        ))}
         <text x={PL + gW / 2} y={H - 2} textAnchor="middle" fontSize="8" fill="#6b7280">Overs</text>
       </svg>
     </div>

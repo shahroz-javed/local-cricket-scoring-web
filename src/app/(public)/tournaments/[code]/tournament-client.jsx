@@ -186,10 +186,40 @@ function QuickStats({ tournament, fixtures }) {
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
+function GuestTeamNudge({ tournament }) {
+  const guestTeams = (tournament.tournamentTeams ?? []).filter(tt => tt.team?.is_guest);
+  if (guestTeams.length === 0) return null;
+  if (!["registration", "active"].includes(tournament.status)) return null;
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+      <Icon name="info" className="text-amber-600 text-lg shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-amber-800">
+          {guestTeams.length === 1
+            ? `${guestTeams[0].team.name} is playing as a guest team`
+            : `${guestTeams.length} teams are playing as guest teams`}
+        </p>
+        <p className="text-xs text-amber-700 mt-0.5">
+          Guest teams are created by the organiser and don't have CricketApp accounts. Players can{" "}
+          <a href="/register" className="font-semibold underline hover:text-amber-900">register free</a>{" "}
+          to get their own profile and track their stats.
+        </p>
+        {guestTeams.length <= 3 && (
+          <p className="text-xs text-amber-600 mt-1 font-medium">
+            {guestTeams.map(tt => tt.team.name).join(", ")}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function OverviewTab({ tournament, fixtures }) {
   return (
     <div className="space-y-5">
       <WinnerCard tournament={tournament} />
+      <GuestTeamNudge tournament={tournament} />
       {tournament.description && (
         <div className="bg-surface rounded-2xl border border-outline-variant p-5">
           <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{tournament.description}</p>
@@ -716,6 +746,267 @@ function StatsTab({ stats }) {
   );
 }
 
+// ─── Bracket Tab ─────────────────────────────────────────────────────────────
+
+const BRACKET_STAGE_ORDER = ["round_of_16", "quarter_final", "semi_final", "final", "third_place"];
+
+function BracketMatchCard({ fixture, winner }) {
+  const match  = fixture.match;
+  const teams  = match?.teams ?? [];
+  const home   = teams.find(t => t.role === "home") ?? teams[0];
+  const away   = teams.find(t => t.role === "away") ?? teams[1];
+
+  const homeName = home?.name ?? fixture.home_placeholder ?? "TBD";
+  const awayName = away?.name ?? fixture.away_placeholder ?? "TBD";
+
+  const isLive     = match?.status === "active";
+  const isComplete = match?.status === "completed" || fixture.is_overridden;
+
+  const homeWon = winner && (home?.id === winner || (fixture.is_overridden && fixture.override_winner?.id === home?.id));
+  const awayWon = winner && (away?.id === winner || (fixture.is_overridden && fixture.override_winner?.id === away?.id));
+
+  const teamRow = (name, won, isTbd) => (
+    <div className={`flex items-center justify-between gap-2 px-3 py-2 ${won ? "bg-secondary/5" : ""}`}>
+      <span className={`text-xs font-semibold truncate max-w-[110px] ${
+        isTbd ? "text-foreground-muted italic" : won ? "text-secondary" : isComplete ? "text-foreground-muted" : "text-foreground"
+      }`}>{name}</span>
+      {won && <Icon name="check_circle" className="text-secondary text-sm shrink-0" />}
+    </div>
+  );
+
+  return (
+    <div className={`w-[168px] rounded-xl border overflow-hidden shadow-sm transition-all ${
+      isLive ? "border-secondary/50 shadow-secondary/10" : "border-outline-variant"
+    }`}>
+      {isLive && (
+        <div className="h-0.5 cricket-gradient" />
+      )}
+      <div className="bg-white divide-y divide-outline-variant/50">
+        {teamRow(homeName, homeWon, !home && !fixture.home_placeholder)}
+        {teamRow(awayName, awayWon, !away && !fixture.away_placeholder)}
+      </div>
+      {(isLive || (match?.code && isComplete)) && (
+        <div className={`px-3 py-1 flex items-center justify-between ${isLive ? "bg-green-50" : "bg-surface-low"}`}>
+          {isLive ? (
+            <span className="flex items-center gap-1 text-[9px] font-bold text-secondary uppercase tracking-wide">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-secondary"></span>
+              </span>
+              Live
+            </span>
+          ) : (
+            <span className="text-[9px] font-bold text-foreground-muted uppercase">Result</span>
+          )}
+          {match?.code && (
+            <Link href={`/matches/${match.code}`}
+              className="text-[9px] font-bold text-primary hover:underline">
+              View →
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BracketTab({ fixtures: fixturesData, tournament }) {
+  const allFixtures = fixturesData?.fixtures ?? {};
+
+  // Only knockout stages
+  const knockoutStages = BRACKET_STAGE_ORDER.filter(s => allFixtures[s] && allFixtures[s].length > 0);
+
+  // Separate third-place from main bracket
+  const mainStages      = knockoutStages.filter(s => s !== "third_place");
+  const thirdPlaceStage = knockoutStages.includes("third_place") ? allFixtures["third_place"] : null;
+
+  if (mainStages.length === 0) {
+    return (
+      <div className="text-center py-16 bg-surface rounded-2xl border border-outline-variant">
+        <Icon name="account_tree" className="text-5xl text-foreground-muted mb-3" />
+        <p className="font-semibold text-foreground mb-1">Bracket not available</p>
+        <p className="text-sm text-foreground-muted">
+          {tournament.format === "league"
+            ? "This is a league tournament — no knockout bracket."
+            : "Fixtures haven't been generated yet."}
+        </p>
+      </div>
+    );
+  }
+
+  // Build a flat map of all fixtures by ID for chaining lookups
+  const fixtureById = {};
+  for (const stage of mainStages) {
+    for (const f of allFixtures[stage]) {
+      fixtureById[f.id] = f;
+    }
+  }
+
+  function getWinner(f) {
+    return f.effective_winner_team_id ?? null;
+  }
+
+  // Layout dimensions
+  const CARD_W    = 168;
+  const CARD_H    = 82;
+  const COL_GAP   = 56;
+  const ROW_GAP   = 16;
+  const PAD_X     = 20;
+  const PAD_Y     = 20;
+
+  // For each stage (column), compute positions of cards
+  // We build a proper binary tree layout from the right (final) backwards
+  const numRounds = mainStages.length;
+
+  // The final round has 1 match (possibly 2 if semi only etc.)
+  // Build column layouts
+  const cols = mainStages.map((stage, colIdx) => {
+    const items = allFixtures[stage];
+    const count = items.length;
+    return { stage, items, count, colIdx };
+  });
+
+  // Total rows needed = items in first column (most items)
+  const maxRows = cols[0]?.count ?? 1;
+
+  // For each column, the spacing between card centres doubles each round
+  // Col 0 (earliest): gap = CARD_H + ROW_GAP per pair
+  // Col 1: gap doubles, etc.
+
+  // Compute card centres per column
+  function getCardPositions(colIdx) {
+    const col = cols[colIdx];
+    if (!col) return [];
+    const count = col.count;
+
+    // Spacing factor: each subsequent round doubles the vertical space
+    const factor = Math.pow(2, colIdx);
+    const unitH  = CARD_H + ROW_GAP;
+    const spacing = unitH * factor;
+
+    // Total height this column occupies
+    const totalH = spacing * count - ROW_GAP * factor + (factor - 1) * CARD_H;
+
+    // First card offset to vertically center the column
+    // We reference everything to the first column's total height
+    const col0Height = (CARD_H + ROW_GAP) * maxRows - ROW_GAP;
+    const offset = (col0Height - (spacing * (count - 1) + CARD_H)) / 2;
+
+    return col.items.map((_, i) => offset + i * spacing + CARD_H / 2);
+  }
+
+  // SVG total size
+  const svgWidth  = numRounds * (CARD_W + COL_GAP) - COL_GAP + PAD_X * 2;
+  const col0Height = (CARD_H + ROW_GAP) * maxRows - ROW_GAP;
+  const svgHeight = col0Height + PAD_Y * 2;
+
+  // Build connector paths between columns
+  const connectors = [];
+  for (let ci = 0; ci < cols.length - 1; ci++) {
+    const leftCol  = cols[ci];
+    const rightCol = cols[ci + 1];
+    const leftPositions  = getCardPositions(ci);
+    const rightPositions = getCardPositions(ci + 1);
+
+    // Each pair of left cards feeds one right card
+    for (let ri = 0; ri < rightCol.count; ri++) {
+      const srcA = ri * 2;
+      const srcB = ri * 2 + 1;
+
+      const x1 = PAD_X + ci * (CARD_W + COL_GAP) + CARD_W;
+      const x2 = PAD_X + (ci + 1) * (CARD_W + COL_GAP);
+      const xMid = (x1 + x2) / 2;
+
+      if (leftPositions[srcA] !== undefined) {
+        const y1 = PAD_Y + leftPositions[srcA];
+        const y2 = PAD_Y + (rightPositions[ri] ?? leftPositions[srcA]);
+        connectors.push({ x1, y1, x2, y2, xMid, key: `${ci}-${ri}-a` });
+      }
+      if (leftPositions[srcB] !== undefined) {
+        const y1 = PAD_Y + leftPositions[srcB];
+        const y2 = PAD_Y + (rightPositions[ri] ?? leftPositions[srcB]);
+        connectors.push({ x1, y1, x2, y2, xMid, key: `${ci}-${ri}-b` });
+      }
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* overflow-x-auto with momentum scroll on iOS */}
+      <div
+        className="bg-surface rounded-2xl border border-outline-variant p-4 overflow-x-auto"
+        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+      >
+        {/* Single min-width container keeps labels + bracket in sync */}
+        <div style={{ minWidth: svgWidth }}>
+          {/* Stage labels */}
+          <div className="flex gap-0 mb-3" style={{ paddingLeft: PAD_X }}>
+            {cols.map(col => (
+              <div key={col.stage} style={{ width: CARD_W + COL_GAP, flexShrink: 0 }}>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted">
+                  {STAGE_LABEL[col.stage] ?? col.stage}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* SVG bracket */}
+          <div className="relative" style={{ width: svgWidth }}>
+            <svg
+              width={svgWidth}
+              height={svgHeight}
+              className="absolute inset-0 pointer-events-none"
+              aria-hidden="true"
+            >
+              {connectors.map(c => (
+                <path
+                  key={c.key}
+                  d={`M ${c.x1} ${c.y1} C ${c.xMid} ${c.y1}, ${c.xMid} ${c.y2}, ${c.x2} ${c.y2}`}
+                  fill="none"
+                  stroke="var(--color-outline-variant, #e2e8f0)"
+                  strokeWidth="1.5"
+                />
+              ))}
+            </svg>
+
+            {/* Cards */}
+            <div style={{ height: svgHeight, position: "relative" }}>
+              {cols.map((col, ci) => {
+                const positions = getCardPositions(ci);
+                return col.items.map((fixture, ri) => (
+                  <div
+                    key={fixture.id}
+                    style={{
+                      position: "absolute",
+                      left:  PAD_X + ci * (CARD_W + COL_GAP),
+                      top:   PAD_Y + positions[ri] - CARD_H / 2,
+                      width: CARD_W,
+                    }}
+                  >
+                    <BracketMatchCard fixture={fixture} winner={getWinner(fixture)} />
+                  </div>
+                ));
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Third place playoff — shown below main bracket */}
+      {thirdPlaceStage && thirdPlaceStage.length > 0 && (
+        <div className="bg-surface rounded-2xl border border-outline-variant p-4">
+          <p className="text-xs font-bold uppercase tracking-widest text-foreground-muted mb-3">
+            Third Place Play-off
+          </p>
+          <div className="flex justify-center">
+            <BracketMatchCard fixture={thirdPlaceStage[0]} winner={getWinner(thirdPlaceStage[0])} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── QR Code Modal ───────────────────────────────────────────────────────────
 
 function QRModal({ url, onClose }) {
@@ -1119,13 +1410,7 @@ export function TournamentHub({ code, initialData }) {
         {activeTab === "overview"  && <OverviewTab  tournament={tournament} fixtures={fixtures} />}
         {activeTab === "standings" && <StandingsTab standings={standings} />}
         {activeTab === "fixtures"  && <FixturesTab  fixtures={fixtures} />}
-        {activeTab === "bracket"   && (
-          <div className="text-center py-16 bg-surface rounded-2xl border border-outline-variant">
-            <Icon name="account_tree" className="text-5xl text-foreground-muted mb-3" />
-            <p className="font-semibold text-foreground mb-1">Bracket Visualization</p>
-            <p className="text-sm text-foreground-muted">Coming in P8 — SVG knockout bracket.</p>
-          </div>
-        )}
+        {activeTab === "bracket"   && <BracketTab fixtures={fixtures} tournament={tournament} />}
         {activeTab === "stats"     && <StatsTab     stats={stats} />}
 
       </div>

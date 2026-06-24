@@ -1623,74 +1623,79 @@ function WormGraph({ scorecard, liveState }) {
 
   const oversLimit = scorecard?.match?.overs_limit ?? 20;
 
-  // Build cumulative runs per over per innings from overs_log
-  function buildCurve(inn) {
+  // Build cumulative run points + wicket dot positions from overs_log
+  function buildCurveData(inn) {
     const log = inn?.overs_log ?? [];
     const points = [{ over: 0, runs: 0 }];
+    const wicketDots = [];
     let cumRuns = 0;
     log.filter((o) => o.is_completed).forEach((o) => {
       cumRuns += o.runs ?? 0;
       points.push({ over: o.over_number, runs: cumRuns });
+      if ((o.wickets ?? 0) > 0) {
+        wicketDots.push({ over: o.over_number, runs: cumRuns, count: o.wickets });
+      }
     });
-    // Add current live over partial point
     if (liveState?.innings?.innings_number === inn.innings_number && liveState?.current_over) {
       const liveBalls = (liveState.current_over.deliveries ?? []).filter((d) => !d.is_undone);
       const liveRuns = liveBalls.reduce((s, d) => s + (d.runs_bat ?? 0) + (d.extras_runs ?? 0), 0);
       const overNum = liveState.current_over.over_number - 1 + liveBalls.filter((d) => d.is_legal_ball).length / 6;
       if (liveRuns > 0) points.push({ over: overNum, runs: cumRuns + liveRuns });
+      const liveWkts = liveBalls.filter((d) => d.is_wicket);
+      if (liveWkts.length > 0) {
+        wicketDots.push({ over: overNum, runs: cumRuns + liveRuns, count: liveWkts.length });
+      }
     }
-    return points;
+    return { points, wicketDots };
   }
 
   const curves = innings.map((inn, idx) => ({
-    points: buildCurve(inn),
+    ...buildCurveData(inn),
     color: idx === 0 ? "#2563eb" : "#16a34a",
     label: inn.batting_team,
     dashed: idx === 1,
   }));
 
-  // SVG dimensions
-  const W = 320, H = 160, PAD = { top: 12, right: 16, bottom: 28, left: 36 };
+  const W = 320, H = 160, PAD = { top: 14, right: 16, bottom: 28, left: 36 };
   const gW = W - PAD.left - PAD.right;
   const gH = H - PAD.top - PAD.bottom;
 
-  const maxRuns = Math.max(
-    ...curves.flatMap((c) => c.points.map((p) => p.runs)),
-    50
-  );
+  const maxRuns = Math.max(...curves.flatMap((c) => c.points.map((p) => p.runs)), 50);
   const maxOvers = oversLimit;
 
   function toX(over) { return PAD.left + (over / maxOvers) * gW; }
   function toY(runs) { return PAD.top + gH - (runs / maxRuns) * gH; }
-
   function makePath(points) {
     if (points.length < 2) return "";
     return points.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.over).toFixed(1)},${toY(p.runs).toFixed(1)}`).join(" ");
   }
 
-  // Y-axis gridlines
   const yTicks = [0, Math.round(maxRuns * 0.25), Math.round(maxRuns * 0.5), Math.round(maxRuns * 0.75), maxRuns];
-  // X-axis ticks every 5 overs
   const xTicks = Array.from({ length: Math.floor(maxOvers / 5) + 1 }, (_, i) => i * 5);
-
   const currentOver = liveState?.current_over?.over_number;
 
   return (
     <div className="bg-white sm:rounded-2xl sm:shadow-sm sm:ring-1 sm:ring-gray-200 overflow-hidden mb-3">
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Manhattan Chart</span>
+      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Worm Chart</span>
+          <span className="flex items-center gap-1 text-[10px] text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Wicket
+          </span>
+        </div>
         <div className="flex items-center gap-3">
           {curves.map((c) => (
             <span key={c.label} className="flex items-center gap-1 text-[10px] font-semibold text-gray-600">
-              <span className="inline-block w-4 h-0.5 rounded" style={{ backgroundColor: c.color }} />
+              <span className="inline-block w-5 h-0.5 rounded" style={{ backgroundColor: c.color,
+                backgroundImage: c.dashed ? `repeating-linear-gradient(to right,${c.color} 0,${c.color} 5px,transparent 5px,transparent 8px)` : undefined,
+                backgroundColor: c.dashed ? "transparent" : c.color }} />
               {c.label}
             </span>
           ))}
         </div>
       </div>
-      <div className="px-2 py-3 overflow-x-auto">
+      <div className="px-2 py-3 overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 260, maxWidth: 600 }}>
-          {/* Grid lines */}
           {yTicks.map((t) => (
             <g key={t}>
               <line x1={PAD.left} y1={toY(t)} x2={W - PAD.right} y2={toY(t)} stroke="#f3f4f6" strokeWidth="1" />
@@ -1703,31 +1708,27 @@ function WormGraph({ scorecard, liveState }) {
               <text x={toX(t)} y={H - PAD.bottom + 10} textAnchor="middle" fontSize="8" fill="#9ca3af">{t}</text>
             </g>
           ))}
-
-          {/* Current over dashed vertical line */}
           {currentOver && (
-            <line
-              x1={toX(currentOver - 1)} y1={PAD.top}
-              x2={toX(currentOver - 1)} y2={H - PAD.bottom}
-              stroke="#93c5fd" strokeWidth="1" strokeDasharray="3,3"
-            />
+            <line x1={toX(currentOver - 1)} y1={PAD.top} x2={toX(currentOver - 1)} y2={H - PAD.bottom}
+              stroke="#93c5fd" strokeWidth="1" strokeDasharray="3,3" />
           )}
-
-          {/* Curves */}
+          {/* Lines */}
           {curves.map((c) => (
-            <path
-              key={c.label}
-              d={makePath(c.points)}
-              fill="none"
-              stroke={c.color}
-              strokeWidth="2"
-              strokeDasharray={c.dashed ? "5,3" : undefined}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
+            <path key={c.label} d={makePath(c.points)} fill="none" stroke={c.color}
+              strokeWidth="2" strokeDasharray={c.dashed ? "5,3" : undefined}
+              strokeLinejoin="round" strokeLinecap="round" />
           ))}
-
-          {/* Axis labels */}
+          {/* Wicket dots — fat red circles on top of the line */}
+          {curves.map((c) =>
+            c.wicketDots.map((d, i) => (
+              <g key={`${c.label}-w${i}`}>
+                <circle cx={toX(d.over)} cy={toY(d.runs)} r="5" fill="#ef4444" stroke="white" strokeWidth="1.5" />
+                <text x={toX(d.over)} y={toY(d.runs) + 3.5} textAnchor="middle" fontSize="6" fill="white" fontWeight="bold">
+                  {d.count > 1 ? d.count : "W"}
+                </text>
+              </g>
+            ))
+          )}
           <text x={PAD.left + gW / 2} y={H - 2} textAnchor="middle" fontSize="8" fill="#6b7280">Overs</text>
         </svg>
       </div>
@@ -2084,20 +2085,26 @@ function PublicWorm({ inn, liveState, oversLimit }) {
   const currentOver = liveState?.current_over;
   const limit     = inn?.is_super_over ? 1 : (oversLimit ?? 20);
   const points    = [{ over: 0, runs: 0 }];
+  const wicketDots = [];
   let cumRuns = 0;
   log.filter((o) => o.is_completed).forEach((o) => {
     cumRuns += o.runs ?? 0;
     points.push({ over: o.over_number, runs: cumRuns });
+    if ((o.wickets ?? 0) > 0) {
+      wicketDots.push({ over: o.over_number, runs: cumRuns, count: o.wickets });
+    }
   });
   if (isLiveInn && currentOver) {
     const liveBalls = (currentOver.deliveries ?? []).filter((d) => !d.is_undone);
     const liveRuns  = liveBalls.reduce((s, d) => s + (d.runs_bat ?? 0) + (d.extras_runs ?? 0), 0);
     const overFrac  = currentOver.over_number - 1 + liveBalls.filter((d) => d.is_legal_ball).length / 6;
     if (liveRuns > 0) points.push({ over: overFrac, runs: cumRuns + liveRuns });
+    const liveWkts = liveBalls.filter((d) => d.is_wicket);
+    if (liveWkts.length > 0) wicketDots.push({ over: overFrac, runs: cumRuns + liveRuns, count: liveWkts.length });
   }
   if (points.length < 2) return <p className="text-xs text-gray-400 text-center py-6">No overs bowled yet.</p>;
 
-  const W = 300, H = 120, PL = 28, PR = 10, PT = 8, PB = 20;
+  const W = 300, H = 120, PL = 28, PR = 10, PT = 10, PB = 20;
   const gW = W - PL - PR, gH = H - PT - PB;
   const maxRuns = Math.max(...points.map((p) => p.runs), 20);
   const toX = (o) => PL + (o / limit) * gW;
@@ -2107,7 +2114,7 @@ function PublicWorm({ inn, liveState, oversLimit }) {
   const xTicks = Array.from({ length: Math.floor(limit / 5) + 1 }, (_, i) => i * 5);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 220 }}>
         {yTicks.map((t) => (
           <g key={t}>
@@ -2122,6 +2129,15 @@ function PublicWorm({ inn, liveState, oversLimit }) {
           </g>
         ))}
         <path d={path} fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Fat red wicket dots */}
+        {wicketDots.map((d, i) => (
+          <g key={i}>
+            <circle cx={toX(d.over)} cy={toY(d.runs)} r="4.5" fill="#ef4444" stroke="white" strokeWidth="1.5" />
+            <text x={toX(d.over)} y={toY(d.runs) + 3} textAnchor="middle" fontSize="5.5" fill="white" fontWeight="bold">
+              {d.count > 1 ? d.count : "W"}
+            </text>
+          </g>
+        ))}
         <text x={PL + gW / 2} y={H - 2} textAnchor="middle" fontSize="7" fill="#6b7280">Overs</text>
       </svg>
     </div>
