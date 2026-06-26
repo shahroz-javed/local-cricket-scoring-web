@@ -1,4 +1,7 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(
+  /\/+$/,
+  "",
+);
 
 export function apiUrl(path) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -11,12 +14,23 @@ export function apiUrl(path) {
 }
 
 export async function apiRequest(path, options = {}) {
-  const { method = "GET", token, body, headers = {}, cache = "no-store" } = options;
-  const requestHeaders = { Accept: "application/json", ...headers };
+  const {
+    method = "GET",
+    token,
+    body,
+    headers = {},
+    cache = "no-store",
+  } = options;
+  const requestHeaders = {
+    Accept: "application/json",
+    "ngrok-skip-browser-warning": "true",
+    ...headers,
+  };
   let requestBody = body;
 
   if (body && !(body instanceof FormData)) {
-    requestHeaders["Content-Type"] = requestHeaders["Content-Type"] || "application/json";
+    requestHeaders["Content-Type"] =
+      requestHeaders["Content-Type"] || "application/json";
     requestBody = JSON.stringify(body);
   }
 
