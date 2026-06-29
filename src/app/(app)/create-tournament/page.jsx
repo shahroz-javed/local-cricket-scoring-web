@@ -881,6 +881,7 @@ export default function CreateTournamentPage() {
       });
 
       // Unwrap the same way as the list fix
+      // console.log('raw', raw);
       const tournament = raw?.data ?? raw;
 
       // Create prizes separately; collect failures and surface them on the manage page.

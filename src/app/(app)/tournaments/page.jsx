@@ -45,6 +45,7 @@ export default function TournamentsPage() {
   useEffect(() => {
     apiRequest("/api/tournaments", { token })
       .then((data) => {
+        // console.log("tournaments", data);
         const list = Array.isArray(data) ? data : (data?.data ?? []);
         setTournaments(list);
         setError("");
